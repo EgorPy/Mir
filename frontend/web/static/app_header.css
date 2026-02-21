@@ -1,0 +1,21 @@
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+
+.app-header .app-name {
+    font-family: "cursive";
+    margin: 1rem 2rem;
+    font-size: 4rem;
+}
+
+.app-header .profile-name {
+    font-family: "cursive";
+    margin: 1rem 2rem;
+    font-size: 4rem;
+}
+
+.app-header {
+    flex-shrink: 0;
+}

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Мир</title>
+    <link rel="stylesheet" href="../static/style.css">
+    <link rel="stylesheet" href="../static/chat.css">
+    <link rel="stylesheet" href="../static/app_header.css">
+    <script src="/static/profile_change.js"></script>
+</head>
+<body>
+
+<div class="app-header">
+    <a class="app-name" href="/">Мир</a>
+    <a class="profile-name" href="/profile">Егор</a>
+</div>
+
+<div class="chat-section">
+    <div class="chats">
+        {% include "widgets/chat.html" %}
+        {% include "widgets/chat.html" %}
+        {% include "widgets/chat.html" %}
+        {% include "widgets/chat.html" %}
+        {% include "widgets/chat.html" %}
+        {% include "widgets/chat.html" %}
+    </div>
+    <div class="actual-chat">
+        <h1>Hello, world</h1>
+    </div>
+</div>
+
+</body>
+</html>

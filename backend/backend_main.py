@@ -1,0 +1,59 @@
+""" Backend API """
+
+from core.config import config
+from core.logger import logger
+
+from backend.services.auth.api.auth import router as auth_router
+from backend.services.chats.service import router as chats_router
+
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI
+import uvicorn
+import logging
+
+import traceback
+import sys
+
+app = FastAPI()
+
+app.include_router(auth_router, prefix="/auth", tags=["Auth"])
+app.include_router(chats_router)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[f"http://{config.DOMAIN}:{config.FRONTEND_PORT}"],  # f"http://{config.DOMAIN}:{config.FRONTEND_PORT}"
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+def start_server():
+    """ Starts the server """
+
+    logger.info(f"BACKEND server started at http://{config.DOMAIN}:{config.BACKEND_PORT}")
+    uvicorn.run("backend_main:app", host=config.DOMAIN, port=int(config.BACKEND_PORT), reload=True)
+
+
+def run():
+    """ Sets up the server """
+
+    logger = logging.getLogger("core")
+    logger.setLevel(logging.DEBUG)
+
+    start_server()
+
+    # server_thread = threading.Thread(target=start_server, daemon=True)
+    # server_thread.start()
+    # server_thread.join()
+
+
+if __name__ == "__main__":
+    try:
+        run()
+    except Exception:
+        logger.error("Unhandled exception in core system:")
+        traceback.print_exc()
+        print("\nPress Enter to exit...")
+        input()
+        sys.exit(1)

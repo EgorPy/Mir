@@ -1,0 +1,54 @@
+type: container
+props:
+  center_x: true
+children:
+  - type: h3
+    props:
+      data-ui: error
+      style:
+        display: none
+        color: red
+  - type: container
+    width: 600
+    height: 420
+    props:
+      center_x: true
+    layout: vertical
+    gap: 12
+    children:
+      - type: h1
+        props:
+          text: Вход
+      - type: container
+        layout: horizontal
+        children:
+          - type: h3
+            props:
+              text: Нет аккаунта?
+              class: gray-text
+          - type: a
+            props:
+              href: "#"
+              text: Регистрация
+      - type: text_input
+        bind: email
+        props:
+          placeholder: user@gmail.com
+      - type: text_input
+        bind: password
+        props:
+          placeholder: Пароль
+          type: password
+      - type: container
+        layout: horizontal
+        children:
+          - type: h3
+            props:
+              text: Сосал?
+          - type: checkbox
+            bind: remember_me
+      - type: button
+        action: submit
+        endpoint: auth.login
+        props:
+          text: "Отправить"

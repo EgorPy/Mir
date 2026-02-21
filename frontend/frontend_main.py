@@ -1,0 +1,111 @@
+""" Execute this file to run frontend """
+
+from core.config import config
+from core.logger import logger
+
+from fastapi.responses import HTMLResponse, PlainTextResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI, Request
+from pathlib import Path
+import webbrowser
+import threading
+import uvicorn
+import jinja2
+
+import traceback
+import sys
+
+app = FastAPI()
+
+
+def scan_and_register_pages():
+    """ Scans pages directory and registers HTML pages """
+
+    if not pages_dir.exists():
+        logger.error(f"Directory '{pages_dir}' not found")
+        return []
+
+    html_files = list(pages_dir.glob("*.html"))
+
+    logger.info(f"Scanning '{pages_dir}': found {len(html_files)} HTML-files")
+
+    registered_pages = []
+
+    for html_file in html_files:
+        filename = html_file.name
+        route_path = f"/{html_file.stem}"
+
+        if filename == "index.html":
+            route_path = "/"
+
+        @app.get(route_path, response_class=HTMLResponse)
+        async def page_handler(request: Request, template_file=filename):
+            """ Generic page """
+
+            return templates.TemplateResponse(template_file, {"request": request})
+
+        registered_pages.append((route_path, filename))
+        logger.debug(f"Route registered: {route_path} -> {filename}")
+
+    logger.info("Scan results:")
+    for route, template in registered_pages:
+        logger.info(f"{route} -> {template}")
+
+    return registered_pages
+
+
+@app.exception_handler(404)
+async def page_404(request, __):
+    """ Pretty error 404 page """
+
+    logger.info(f"404 status for: {request.url.path}")
+    try:
+        return templates.TemplateResponse("page404.html", {"request": request})
+    except jinja2.exceptions.TemplateNotFound:
+        return PlainTextResponse("404 Not Found", status_code=404)
+
+
+def start_server():
+    """ Starts the server """
+
+    logger.info(f"FRONTEND server started at http://{config.DOMAIN}:{config.FRONTEND_PORT}")
+    uvicorn.run(app, host=config.DOMAIN, port=int(config.FRONTEND_PORT), reload=False)
+
+
+def run():
+    """ Starts the server """
+
+    global app, pages_dir, templates
+
+    app.mount("/static", StaticFiles(directory="frontend/web/static"), name="static")
+    pages_dir = Path("frontend/web/pages")
+    templates = Jinja2Templates(directory=pages_dir)
+
+    # logger.info("Scanning for pages...")
+    registered_pages = scan_and_register_pages()
+
+    if not registered_pages:
+        logger.warning("No pages registered")
+    else:
+        logger.info(f"Pages registered: {len(registered_pages)}")
+
+    server_thread = threading.Thread(target=start_server, daemon=True)
+    server_thread.start()
+
+    url = f"http://{config.DOMAIN}:{config.FRONTEND_PORT}"
+    logger.info(f"Opening browser: {url}")
+    webbrowser.open(url)
+
+    server_thread.join()
+
+
+if __name__ == "__main__":
+    try:
+        run()
+    except Exception:
+        logger.error("Unhandled exception in core system:")
+        traceback.print_exc()
+        print("\nPress Enter to exit...")
+        input()
+        sys.exit(1)

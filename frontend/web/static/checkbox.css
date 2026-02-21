@@ -1,0 +1,33 @@
+.checkbox {
+    width: 20px;
+    height: 20px;
+    background-color: #000;      /* чёрный фон */
+    border: 2px solid #fff;      /* белая рамка */
+    border-radius: 4px;          /* слегка скруглённые углы */
+    appearance: none;            /* отключаем стандартный вид */
+    cursor: pointer;
+    position: relative;
+}
+
+.checkbox:checked::after {
+    content: "";
+    position: absolute;
+    left: 4px;
+    top: 0px;
+    width: 5px;
+    height: 12px;
+    border: solid #fff;
+    border-width: 0 4px 4px 0;
+    transform: rotate(45deg);
+}
+
+.checkbox:disabled {
+    background-color: #222;      /* тёмный фон для disabled */
+    border-color: #555;          /* серая рамка для disabled */
+    cursor: not-allowed;
+}
+
+.checkbox:focus {
+    outline: none;
+    box-shadow: 0 0 1px 1px #fff; /* белое свечение при фокусе */
+}

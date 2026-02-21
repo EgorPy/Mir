@@ -1,0 +1,10 @@
+.container {
+    display: flex;
+    flex-direction: column; /* или row */
+    justify-content: center; /* вертикальное центрирование */
+    align-items: center;     /* горизонтальное центрирование */
+    gap: 12px;               /* расстояние между детьми */
+    width: 100%;             /* контейнер тянется на всю доступную ширину, если нужно */
+    max-width: 100%;         /* не выходит за пределы родителя */
+    box-sizing: border-box;
+}

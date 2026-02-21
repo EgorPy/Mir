@@ -1,0 +1,10 @@
+.main-container {
+    margin: auto 2rem;
+}
+
+.main-container * {
+    font-family: "native";
+    font-weight: 100;
+    font-style: italic;
+    font-size: 3rem;
+}

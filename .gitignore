@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.sqlite3
+*.db
+*.db-journal
+*.env
+*.venv
+venv/
+env/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs and output
+*.out
+*.log
+*.tmp
+
+# Node / frontend
+node_modules/
+dist/
+build/
+*.lock
+
+# Backup files
+*~
+*.bak
+*.swp
+*.old
+
+# PyInstaller / executables
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Others
+pip-wheel-metadata/
+*.ini
+config.js

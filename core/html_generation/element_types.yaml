@@ -1,0 +1,37 @@
+elements:
+  container:
+    description: "Flex container for child elements"
+    css: "container.css"
+  text_input:
+    description: "Text input field"
+    css: "text_input.css"
+  checkbox:
+    description: "Checkbox"
+    css: "checkbox.css"
+  radiobutton:
+    description: "Radio button"
+    css: "radiobutton.css"
+  dropdown:
+    description: "Dropdown list"
+    css: "dropdown.css"
+  button:
+    description: "Button element"
+    css: "button.css"
+  h1:
+    description: "Heading 1"
+    css: "h1.css"
+  h2:
+    description: "Heading 2"
+    css: "h2.css"
+  h3:
+    description: "Heading 3"
+    css: "h3.css"
+  a:
+    description: Hyperlink
+    css: "a.css"
+  img_input:
+    description: "Image input"
+    css: "img_input.css"
+  img_output:
+    description: "Image output"
+    css: "img_output.css"

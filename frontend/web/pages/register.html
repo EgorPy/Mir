@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Мир</title>
+    <link rel="stylesheet" href="../static/style.css">
+    <link rel="stylesheet" href="../static/chat.css">
+    <script src="/static/profile_change.js"></script>
+</head>
+<body>
+
+<div class="form-container" style="padding: 6rem 2rem;">
+    <div class="title">Регистрация аккаунта</div>
+    <div style="margin-bottom: 1rem;" class="subtitle">Есть аккаунт? <a href="/login">Вход</a></div>
+    <p style="display: none;" class="error-text"></p>
+    <form action="/login" method="post" class="contact-form">
+        <input id="first_name_input" type="text" name="first_name"
+               placeholder="Имя" required
+               maxlength="16"
+               pattern="^[^\d]+$"
+               title="Имя не должно содержать цифр">
+
+        <input id="last_name_input" type="text" name="last_name"
+               placeholder="Фамилия" required
+               maxlength="16"
+               pattern="^[^\d]+$"
+               title="Фамилия не должна содержать цифр">
+
+        <input id="phone_input" type="tel" name="phone"
+               placeholder="Телефон" required
+               minlength="4" maxlength="16"
+               pattern="^\s*\+\d+\s*$"
+               title="Введите номер в формате +123456789">
+
+        <input id="email_input" type="email" name="email"
+               placeholder="user@gmail.com" required
+               minlength="5" maxlength="256"
+               title="Введите корректный email, например user@gmail.com">
+
+        <input id="password_input" type="password" name="password"
+               placeholder="Пароль" required
+               minlength="8" maxlength="256"
+               pattern="^\S+$">
+
+        <button type="submit">Зарегистрироваться</button>
+    </form>
+</div>
+
+</body>
+</html>

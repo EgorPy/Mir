@@ -1,0 +1,67 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%; /* Fallback for older browsers */
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    background: black;
+    color: white;
+    font-family: sans-serif;
+}
+
+@font-face {
+font-family: 'Cursive';
+src: url('fonts/GreatVibes/GreatVibes-Regular.ttf') format('truetype');
+font-weight: normal;
+font-style: normal;
+font-display: swap;
+}
+
+@font-face {
+font-family: 'Native'
+src: url("fonts/Merriweather/Merriweather-VariableFont_opsz,wdth,wght.ttf") format('truetype');
+font-weight: normal;
+font-style: normal;
+font-display: swap;
+}
+
+@font-face {
+font-family: 'Native'
+src: url("fonts/Merriweather/Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf") format('truetype');
+font-weight: normal;
+font-style: italic;
+font-display: swap;
+}
+
+
+* {
+    font-family: native sans-serif;
+}
+
+a {
+    text-decoration: none;
+    color: white;
+}
+
+a::visited {
+    color: white;
+}
+
+a::hover {
+    cursor: pointer;
+}
+
+.cursive {
+    font-family: 'Cursive';
+    font-size: 4rem;
+}
+
+.native {
+    font-family: "native";
+    font-weight: 100;
+    font-style: italic;
+    font-size: 4rem;
+}

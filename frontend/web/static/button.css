@@ -1,0 +1,16 @@
+.button {
+    cursor: pointer;
+    padding: 14px 20px;
+    border-radius: 10px;
+    border: 2px solid white;
+    font-size: 1.17rem;
+    background: transparent;
+    color: white;
+    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.button:hover {
+    transform: translateY(-2px);
+    background: white;
+    color: black;
+}
