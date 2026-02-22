@@ -1,5 +1,6 @@
 import chatTemplateHtml from '/pages/widgets/chat.js';
 import { setupChatClickHandlers } from '/static/chat_dialog.js';
+import { BACKEND_URL } from '/static/config.js'
 
 const tempDiv = document.createElement('div');
 tempDiv.innerHTML = chatTemplateHtml;
@@ -11,17 +12,19 @@ if (!chatTemplate) {
 
 async function loadChats() {
     try {
-        const baseUrl = window.BACKEND_URL || '';
-        console.log('Fetching chats from:', `${baseUrl}/chats/list`);
-
-        const response = await fetch(`${baseUrl}/chats/list`);
+        const response = await fetch(`${BACKEND_URL}/chats/list`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const chats = await response.json();
-        console.log('Chats loaded:', chats);
 
         const chatsContainer = document.querySelector('.chats');
         if (!chatsContainer) {
@@ -126,18 +129,4 @@ async function deleteChat(chatId) {
 
 document.addEventListener('DOMContentLoaded', async () => {
     await loadChats();
-
-    const baseUrl = window.BACKEND_URL || '';
-    const response = await fetch(`${baseUrl}/chats/list`);
-    const chats = await response.json();
-
-    if (Object.keys(chats).length === 0) {
-        await createChat('Family');
-        await createChat('Чатик');
-        await createChat('Чатик 2');
-        await createChat('Чатик 3');
-        await createChat('Чатик 4');
-        await createChat('Чатик 5');
-        await createChat('Чатик 6');
-    }
 });

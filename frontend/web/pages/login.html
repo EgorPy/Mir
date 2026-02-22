@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../static/style.css">
+    <link rel="stylesheet" href="../static/form-container.css">
+    <script type="module" src="/static/login.js"></script>
+    <title>Мир</title>
+</head>
+<body>
+
+<div class="form-container">
+    <div class="title">Вход в аккаунт</div>
+    <div class="subtitle">Нет аккаунта? <a href="/register">Регистрация</a></div>
+    <p class="error-text"></p>
+    <form action="/login" method="post" class="login-form">
+        <input id="email_input" type="email" name="email"
+               placeholder="user@gmail.com" required
+               minlength="5" maxlength="256"
+               title="Введите корректный email, например user@gmail.com">
+
+        <input id="password_input" type="password" name="password"
+               placeholder="Пароль" required
+               minlength="8" maxlength="256"
+               pattern="^\S+$">
+
+        <button class="btn" type="submit">Войти</button>
+    </form>
+</div>
+
+</body>
+</html>

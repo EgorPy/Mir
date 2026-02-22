@@ -7,8 +7,9 @@
     <link rel="stylesheet" href="../static/chat.css">
     <link rel="stylesheet" href="../static/message.css">
     <link rel="stylesheet" href="../static/app_header.css">
-    <script src="/static/config.js"></script>
+    <script src="/static/check_auth.js" type="module"></script>
     <script src="/static/load_chats.js" type="module"></script>
+    <script src="/static/create_group.js" type="module"></script>
 </head>
 <body>
 
@@ -17,7 +18,7 @@
         <ul>
             <li><a href="/profile">Профиль</a></li>
             <li>
-                <button>Создать группу</button>
+                <button id="createGroupBtn" class="create-group-btn">Создать группу</button>
             </li>
             <li>
                 <button>Создать канал</button>
@@ -37,13 +38,11 @@
 <div class="modal" id="createGroupModal">
     <div class="modal-content">
         <div class="modal-header">
-            <h2>Создать новую группу</h2>
-            <button class="modal-close" id="closeModalBtn">&times;</button>
+            <h2>Создать группу</h2>
         </div>
         <div class="modal-body">
             <form id="createGroupForm">
                 <div class="form-group">
-                    <label for="groupTitle">Название группы:</label>
                     <input
                             type="text"
                             id="groupTitle"
@@ -53,9 +52,6 @@
                             autocomplete="off"
                     >
                 </div>
-                <div class="form-group">
-                    <small>Название должно быть уникальным и не пустым</small>
-                </div>
             </form>
         </div>
         <div class="modal-footer">
@@ -64,8 +60,6 @@
         </div>
     </div>
 </div>
-
-<div class="modal-overlay" id="modalOverlay"></div>
 
 <div class="app-header">
     <div class="menu-name">

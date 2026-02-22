@@ -1,10 +1,19 @@
+from core.method_generator import AutoDB, ConnectionManager, cm
+from core.logger import logger
+
+from backend.services.auth.api.auth import check_user_session
+
 from fastapi import APIRouter, HTTPException
+from fastapi.params import Depends
 from pydantic import BaseModel
 from typing import Dict, List
 from datetime import datetime
 from uuid import uuid4
 
 router = APIRouter()
+
+
+# cm уже импортирован из core.method_generator, не нужно создавать новый
 
 
 class Service:
@@ -27,17 +36,48 @@ class ChatCreate(BaseModel):
 
 
 @router.get("/list")
-def list_chats():
-    return CHATS
+async def list_chats(
+        user_id: str = Depends(check_user_session),
+        connection_manager: ConnectionManager = Depends(cm.dependency)
+):
+    """ Get a list of all chats for current user """
+
+    db = AutoDB(connection_manager)
+
+    result = await db.execute_async(
+        "SELECT * FROM chats WHERE owner_id = ?",
+        (user_id,)
+    )
+
+    chats_dict = {}
+    if result:
+        for chat in result:
+            if hasattr(chat, 'keys'):
+                chat_dict = dict(chat)
+            else:
+                chat_dict = chat
+            chats_dict[chat_dict['id']] = chat_dict
+
+    print(f"DEBUG: Returning {len(chats_dict)} chats")
+    return chats_dict
 
 
 @router.post("/create")
-def create_chat(data: ChatCreate):
+async def create_chat(
+        data: ChatCreate,
+        user_id: str = Depends(check_user_session),
+        connection_manager: ConnectionManager = Depends(cm.dependency)
+):
+    db = AutoDB(connection_manager)
     chat_id = str(uuid4())
-    CHATS[chat_id] = {"id": chat_id, "title": data.title}
-    MESSAGES[chat_id] = []
-    print(CHATS)
-    return {"ok": True, "id": chat_id}
+
+    result = await db.insert_chat(
+        id=chat_id,
+        owner_id=str(user_id),
+        title=str(data.title)
+    )
+
+    return {"ok": True, "id": chat_id, "result": result}
 
 
 class ChatDelete(BaseModel):

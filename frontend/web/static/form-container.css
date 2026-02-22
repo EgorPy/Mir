@@ -1,0 +1,53 @@
+.form-container * {
+    font-size: 1.5rem;
+    color: white;
+}
+
+.form-container .title {
+    font-size: 2rem;
+    margin: 1rem;
+}
+
+.form-container a {
+    text-decoration: underline;
+}
+
+.form-container input {
+    padding: 14px 20px;
+    background: transparent;
+    border-radius: 10px;
+    border: 2px solid white;
+    margin: 1rem;
+    color: white;
+    outline: none;
+}
+
+.form-container {
+    max-width: 400px;
+    margin: 0 auto;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.form-container .btn {
+    background: none;
+    border-radius: 10px;
+    border: 2px solid white;
+    max-width: 400px;
+    padding: 1rem;
+    margin: 1rem;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.form-container .btn:hover {
+    background-color: #1e1428;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+}

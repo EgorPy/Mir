@@ -50,7 +50,6 @@ async def login(
 async def register(
         first_name: Annotated[str, Form(min_length=2, max_length=32, pattern=r"^[^\d]+$")],
         last_name: Annotated[str, Form(min_length=2, max_length=32, pattern=r"^[^\d]+$")],
-        phone: Annotated[str, Form(min_length=4, max_length=16, pattern=r"^\s*\+\d+\s*$")],
         email: Annotated[str, Form(min_length=5, max_length=256,
                                    pattern=r"^\s*[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+\s*$")],
         password: Annotated[str, Form(min_length=8, max_length=256, pattern=r"^\S+$")],
@@ -61,7 +60,7 @@ async def register(
     session_id = await AuthLogic.register_user(
         first_name.strip().capitalize(),
         last_name.strip().capitalize(),
-        phone.strip(),
+        # phone.strip(),
         email.strip(),
         password.strip(),
         connection
@@ -83,22 +82,32 @@ async def register(
 
 
 async def check_user_session(session_id: Optional[str] = Cookie(None),
-                             connection: sqlite3.Connection = Depends(cm.dependency)):
+                             connection_manager: ConnectionManager = Depends(cm.dependency)):
     """ Checks validity of user session """
 
-    db = AutoDB(connection)
+    db = AutoDB(connection_manager)
 
     if not session_id:
         logger.info("No session provided")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No session provided")
-    db.create_table_if_not_exists("sessions")
-    db.create_column_if_not_exists("sessions", "expires_at")
-    user_id = db.execute("SELECT user_id FROM sessions WHERE id = ? AND expires_at > ?",
-                         (session_id, datetime.utcnow()))
+
+
+    result = await db.execute_async(
+        "SELECT user_id FROM sessions WHERE id = ? AND expires_at > ?",
+        (session_id, datetime.utcnow())
+    )
+
+    if not result:
+        logger.info("Invalid or expired session")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired session")
+
+    user_id = result[0]['user_id'] if result and len(result) > 0 else None
+
     if not user_id:
         logger.info("Invalid or expired session")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired session")
-    return user_id
+
+    return str(user_id)
 
 
 async def check_user_session_for_logout(session_id: Optional[str] = Cookie(None),

@@ -1,5 +1,5 @@
 import { BACKEND_URL } from "/static/config.js"
-document.querySelector(".contact-form").addEventListener("submit", async function(event) {
+document.querySelector(".login-form").addEventListener("submit", async function(event) {
     event.preventDefault()
 
     const email = document.querySelector("#email_input").value

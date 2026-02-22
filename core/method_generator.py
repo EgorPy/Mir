@@ -2,34 +2,59 @@
 
 from core.logger import logger
 
+from fastapi.concurrency import run_in_threadpool
+from functools import wraps, partial
 import inspect
 import sqlite3
 import re
 import os
+import threading
+
+
+def async_db_method(func):
+    """ Decorator to convert sync db method to async """
+
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        # args[0] - это self (экземпляр AutoDB)
+        # Остальные args и kwargs - параметры метода
+        return await run_in_threadpool(func, *args, **kwargs)
+
+    return wrapper
 
 
 class ConnectionManager:
-    """ Database connection manager for FastAPI """
+    """ Database connection manager for FastAPI with thread-local storage """
 
     def __init__(self, path="database.db"):
         self.path = path
+        self.local = threading.local()
 
-    def connect(self) -> sqlite3.Connection:
-        """ Method that returns connection to the database """
+    def get_connection(self) -> sqlite3.Connection:
+        """ Get or create thread-local connection """
+        if not hasattr(self.local, 'connection'):
+            thread_id = threading.get_ident()
+            logger.debug(f"Creating new connection in thread {thread_id}")
+            conn = sqlite3.connect(self.path)
+            conn.row_factory = sqlite3.Row
+            self.local.connection = conn
+        return self.local.connection
 
-        logger.debug("Initializing database connection at " + os.getcwd() + "\\" + self.path)
-        conn = sqlite3.connect(self.path)
-        conn.row_factory = sqlite3.Row
-        return conn
+    def close_connection(self):
+        """ Close thread-local connection if it exists """
+        if hasattr(self.local, 'connection'):
+            thread_id = threading.get_ident()
+            logger.debug(f"Closing connection in thread {thread_id}")
+            self.local.connection.close()
+            delattr(self.local, 'connection')
 
-    async def dependency(self):  # async is important in this method because of FastAPI threadpool
-        """ Generator that yields connection to the database """
-
-        conn = self.connect()
+    def dependency(self):
+        """ Generator that yields connection manager (not connection itself) """
         try:
-            yield conn
+            yield self
         finally:
-            conn.close()
+            # Не закрываем соединение здесь - оно будет жить пока жив поток
+            pass
 
 
 def _guess_table_from_method(name: str) -> str:
@@ -65,28 +90,30 @@ def _log_call_context(method_name: str):
 class AutoDB:
     """
     Database with auto-generated methods and logging
-    Method-Driven Data Modeling (MDDM) or
-    Code-Driven Data Definition (CDDD)
+    Method-Driven Data Modeling (MDDM)
     """
-
-    # TODO: Add method caching
-    # TODO: Add saving to generated methods or pre generate all methods on the first run and then load them
 
     OPERATION_KEYWORDS = {"get", "set", "update", "delete"}
     STATUS_KEYWORDS = {"uploaded", "pending", "processing", "waiting", "done", "error"}
     QUERY_KEYWORDS = {"with", "by"}
 
-    def __init__(self, connection: sqlite3.Connection):
+    def __init__(self, connection_manager: ConnectionManager):
         """
-        Initialize with existing SQLite connection
+        Initialize with ConnectionManager instead of direct connection
 
         Args:
-            connection: Active SQLite connection
+            connection_manager: ConnectionManager instance
         """
+        self.connection_manager = connection_manager
+        logger.debug("AutoDB initialized with connection manager")
 
-        self.connection = connection
-        self.cursor = self.connection.cursor()
-        logger.debug("AutoDB initialized with provided connection")
+    def _get_connection(self):
+        """ Get thread-local connection """
+        return self.connection_manager.get_connection()
+
+    def _get_cursor(self):
+        """ Get cursor from thread-local connection """
+        return self._get_connection().cursor()
 
     def __getattr__(self, name: str):
         """ Dynamically create method based on its name """
@@ -100,26 +127,29 @@ class AutoDB:
             ):
                 method = parser(name)
                 if method:
-                    return method
+                    # Привязываем метод к экземпляру
+                    bound_method = method.__get__(self, AutoDB)
+                    return async_db_method(bound_method)
 
         if name.startswith("get_"):
             for parser in (
                     self._parse_get_with_status_table,
                     self._parse_get_by_column,
-                    # self._parse_get_table_column,
                     self._parse_get_column_from_table,
             ):
                 method = parser(name)
                 if method:
-                    return method
+                    bound_method = method.__get__(self, AutoDB)
+                    return async_db_method(bound_method)
 
-        if name.startswith("is_"):  # this means that this method should return a bool return type
+        if name.startswith("is_"):
             for parser in (
                     self._parse_is_exists,
             ):
                 method = parser(name)
                 if method:
-                    return method
+                    bound_method = method.__get__(self, AutoDB)
+                    return async_db_method(bound_method)
 
         if name.startswith("insert_"):
             for parser in (
@@ -127,7 +157,8 @@ class AutoDB:
             ):
                 method = parser(name)
                 if method:
-                    return method
+                    bound_method = method.__get__(self, AutoDB)
+                    return async_db_method(bound_method)
 
         if name.startswith("delete_"):
             for parser in (
@@ -135,7 +166,8 @@ class AutoDB:
             ):
                 method = parser(name)
                 if method:
-                    return method
+                    bound_method = method.__get__(self, AutoDB)
+                    return async_db_method(bound_method)
 
         raise AttributeError(f"Unknown method format: {name}")
 
@@ -152,20 +184,22 @@ class AutoDB:
             return None
 
         columns = columns_part.split("_and_")
-        placeholders = ", ".join(columns)
-        query = f"SELECT {placeholders} FROM {table} WHERE status = ?"
+        query = f"SELECT {', '.join(columns)} FROM {table} WHERE status = ?"
         _log_call_context(name)
         logger.debug(f"Prepared SQL query: {query} | Status: {status}")
 
-        def method():
+        def method(self):
             """ Returns column(s) with specific status """
-
             _log_call_context(name)
+            conn = self._get_connection()
+            cursor = conn.cursor()
+
             self._ensure_table_and_columns(table, columns + ["status"])
             logger.debug(f"Executing query with status={status}")
-            with self.connection:
-                self.cursor.execute(query, (status,))
-                result = self.cursor.fetchall()
+
+            cursor.execute(query, (status,))
+            result = cursor.fetchall()
+
             logger.info(f"Returned {len(result)} rows for columns: {columns}")
             return [dict(row) for row in result]
 
@@ -187,56 +221,22 @@ class AutoDB:
         _log_call_context(name)
         logger.debug(f"Prepared SQL query: {query}")
 
-        def method(value):
+        def method(self, value):
             """ Returns column selected by another column """
-
             _log_call_context(name)
+            conn = self._get_connection()
+            cursor = conn.cursor()
+
             self._ensure_table_and_columns(table, [column, by_column])
-            with self.connection:
-                logger.debug(f"Executing query with {by_column}={value}")
-                self.cursor.execute(query, (value,))
-                result = self.cursor.fetchall()
+            logger.debug(f"Executing query with {by_column}={value}")
+
+            cursor.execute(query, (value,))
+            result = cursor.fetchall()
+
             logger.info(f"Returned {len(result)} rows for column: {column}")
             return [dict(row) for row in result]
 
         return method
-
-    # def _parse_get_table_column(self, name: str):
-    #     """ get_{table}_{column}(columns_as_keyword_arguments) """
-    #
-    #     match = re.match(r"^get_(\w+)_(\w+)$", name)
-    #     if not match:
-    #         return None
-    #
-    #     table_singular, return_column = match.groups()
-    #
-    #     table = table_singular + "s"
-    #
-    #     def method(**columns):
-    #         """ Returns column selected by columns """
-    #
-    #         _log_call_context(name)
-    #
-    #         if not columns:
-    #             raise ValueError(f"{name} must be called with keyword arguments for WHERE columns")
-    #
-    #         where_columns = list(columns.keys())
-    #         self._ensure_table_and_columns(table, [return_column] + where_columns)
-    #
-    #         where_clause = " AND ".join(f"{col} = ?" for col in where_columns)
-    #         query = f"SELECT {return_column} FROM {table} WHERE {where_clause}"
-    #
-    #         values = tuple(columns[col] for col in where_columns)
-    #
-    #         with self.connection:
-    #             self.cursor.execute(query, values)
-    #             rows = self.cursor.fetchall()
-    #
-    #         if not rows:
-    #             return None
-    #         return rows[0][return_column]
-    #
-    #     return method
 
     def _parse_get_column_from_table(self, name: str):
         """ get_{column}_from_{table}(columns_as_keyword_arguments) """
@@ -247,10 +247,11 @@ class AutoDB:
 
         return_column, table = match.groups()
 
-        def method(**columns):
+        def method(self, **columns):
             """ Returns column selected by columns """
-
             _log_call_context(name)
+            conn = self._get_connection()
+            cursor = conn.cursor()
 
             if not columns:
                 raise ValueError(f"{name} must be called with keyword arguments for WHERE columns")
@@ -265,9 +266,8 @@ class AutoDB:
 
             values = tuple(columns[col] for col in where_columns)
 
-            with self.connection:
-                self.cursor.execute(query, values)
-                rows = self.cursor.fetchall()
+            cursor.execute(query, values)
+            rows = cursor.fetchall()
 
             if not rows:
                 return None
@@ -289,20 +289,26 @@ class AutoDB:
         _log_call_context(name)
         logger.debug(f"Prepared SQL SET query: {query} | Status: {status}")
 
-        def method(*values):
+        def method(self, *values):
             """ Sets columns with status """
-
             _log_call_context(name)
+            conn = self._get_connection()
+            cursor = conn.cursor()
+
             if len(values) != len(columns):
                 raise ValueError(f"Expected {len(columns)} values, got {len(values)}")
+
             self._ensure_table_and_columns(table, columns + ["status"])
-            with self.connection:
-                self.cursor.execute(query, (*values, status))
-                self.connection.commit()
-                self.cursor.execute(f"SELECT * FROM {table} WHERE status = ?", (status,))
-                rows = self.cursor.fetchall()
-                self.cursor.execute(f"PRAGMA table_info({table})")
-                col_names = [row[1] for row in self.cursor.fetchall()]
+
+            cursor.execute(query, (*values, status))
+            conn.commit()
+
+            cursor.execute(f"SELECT * FROM {table} WHERE status = ?", (status,))
+            rows = cursor.fetchall()
+
+            cursor.execute(f"PRAGMA table_info({table})")
+            col_names = [row[1] for row in cursor.fetchall()]
+
             return [dict(zip(col_names, row)) for row in rows]
 
         return method
@@ -313,25 +319,32 @@ class AutoDB:
         match = re.match(r"^set_(\w+)_by_(\w+)_and_(\w+)$", name)
         if not match:
             return None
+
         column, filter1, filter2 = match.groups()
         table = _guess_table_from_method(name)
         query = f"UPDATE {table} SET {column} = ? WHERE {filter1} = ? AND {filter2}=?"
         _log_call_context(name)
         logger.debug(f"Prepared SQL query: {query}")
 
-        def method(value_to_set, filter1_value, filter2_value):
+        def method(self, value_to_set, filter1_value, filter2_value):
             """ Sets columns with two filters """
-
             _log_call_context(name)
+            conn = self._get_connection()
+            cursor = conn.cursor()
+
             self._ensure_table_and_columns(table, [column, filter1, filter2])
-            with self.connection:
-                self.cursor.execute(query, (value_to_set, filter1_value, filter2_value))
-                self.connection.commit()
-                self.cursor.execute(f"SELECT * FROM {table} WHERE {filter1}=? AND {filter2}=?", (filter1_value, filter2_value))
-                rows = self.cursor.fetchall()
-                self.cursor.execute(f"PRAGMA table_info({table})")
-                columns = [row[1] for row in self.cursor.fetchall()]
-                return [dict(zip(columns, row)) for row in rows]
+
+            cursor.execute(query, (value_to_set, filter1_value, filter2_value))
+            conn.commit()
+
+            cursor.execute(f"SELECT * FROM {table} WHERE {filter1}=? AND {filter2}=?",
+                           (filter1_value, filter2_value))
+            rows = cursor.fetchall()
+
+            cursor.execute(f"PRAGMA table_info({table})")
+            columns = [row[1] for row in cursor.fetchall()]
+
+            return [dict(zip(columns, row)) for row in rows]
 
         return method
 
@@ -341,8 +354,8 @@ class AutoDB:
         match = re.match(r"^set_(\w+)_by_(\w+)$", name)
         if not match:
             return None
-        column, by_column = match.groups()
 
+        column, by_column = match.groups()
         table = _guess_table_from_method(name)
 
         if column.endswith("_status"):
@@ -353,7 +366,6 @@ class AutoDB:
 
         if table.endswith("_status"):
             table = table.removesuffix("_status")
-
             if not table.endswith("s"):
                 table += "s"
             query = f"UPDATE {table} SET status=? WHERE {by_column}=?"
@@ -365,20 +377,24 @@ class AutoDB:
         _log_call_context(name)
         logger.debug(f"Prepared SQL query: {query}")
 
-        def method(value_to_set, filter_value):
+        def method(self, value_to_set, filter_value):
             """ Sets columns with filter """
-
             _log_call_context(name)
-            self._ensure_table_and_columns(table, [column, by_column, "status"])
-            with self.connection:
-                self.cursor.execute(query, (value_to_set, filter_value))
-                self.connection.commit()
+            conn = self._get_connection()
+            cursor = conn.cursor()
 
-                self.cursor.execute(f"SELECT * FROM {table} WHERE {by_column}=?", (filter_value,))
-                rows = self.cursor.fetchall()
-                self.cursor.execute(f"PRAGMA table_info({table})")
-                columns = [row[1] for row in self.cursor.fetchall()]
-                return [dict(zip(columns, row)) for row in rows]
+            self._ensure_table_and_columns(table, [column, by_column, "status"])
+
+            cursor.execute(query, (value_to_set, filter_value))
+            conn.commit()
+
+            cursor.execute(f"SELECT * FROM {table} WHERE {by_column}=?", (filter_value,))
+            rows = cursor.fetchall()
+
+            cursor.execute(f"PRAGMA table_info({table})")
+            columns = [row[1] for row in cursor.fetchall()]
+
+            return [dict(zip(columns, row)) for row in rows]
 
         return method
 
@@ -386,7 +402,6 @@ class AutoDB:
         """ Parses methods like set_{table}_status(arg1, status) """
 
         match = re.fullmatch(r"set_(\w+)_status", name)
-
         if not match:
             return None
 
@@ -398,19 +413,24 @@ class AutoDB:
         _log_call_context(name)
         logger.debug(f"Prepared SQL query: {query}")
 
-        def method(id_value, status_value):
+        def method(self, id_value, status_value):
             """ Set status method """
-
             _log_call_context(name)
+            conn = self._get_connection()
+            cursor = conn.cursor()
+
             self._ensure_table_and_columns(table, ["status"])
-            with self.connection:
-                self.cursor.execute(query, (status_value, id_value))
-                self.connection.commit()
-                self.cursor.execute(f"SELECT * FROM {table} WHERE id=?", (id_value,))
-                rows = self.cursor.fetchall()
-                self.cursor.execute(f"PRAGMA table_info({table})")
-                columns = [row[1] for row in self.cursor.fetchall()]
-                return [dict(zip(columns, row)) for row in rows]
+
+            cursor.execute(query, (status_value, id_value))
+            conn.commit()
+
+            cursor.execute(f"SELECT * FROM {table} WHERE id=?", (id_value,))
+            rows = cursor.fetchall()
+
+            cursor.execute(f"PRAGMA table_info({table})")
+            columns = [row[1] for row in cursor.fetchall()]
+
+            return [dict(zip(columns, row)) for row in rows]
 
         return method
 
@@ -418,7 +438,6 @@ class AutoDB:
         """ Parses methods like is_{table}_exists(arg1) """
 
         match = re.fullmatch(r"is_(\w+)_exists", name)
-
         if not match:
             return None
 
@@ -426,26 +445,24 @@ class AutoDB:
         if not table.endswith("s"):
             table += "s"
 
-        query = "SELECT COUNT(*) as count FROM {} WHERE {}"
         _log_call_context(name)
-        logger.debug(f"Prepared SQL query: {query}")
+        logger.debug(f"Prepared SQL query template for exists check")
 
-        def method(**where_columns):
-            """ Set status method """
-
+        def method(self, **where_columns):
+            """ Check if record exists """
             _log_call_context(name)
+            conn = self._get_connection()
+            cursor = conn.cursor()
+
             self._ensure_table_and_columns(table, list(where_columns.keys()))
-            with self.connection:
-                where_clause = " AND ".join(f"{col} = ?" for col in where_columns)
-                self.cursor.execute(query.format(
-                    table,
-                    where_clause
-                ), (*where_columns.values(),))
-                result: list[sqlite3.Row] = self.cursor.fetchall()
-                self.cursor.execute(f"PRAGMA table_info({table})")
-                columns = [row[1] for row in self.cursor.fetchall()]
-                logger.info(f"Returned {len(result)} rows with columns: {columns}")
-                return bool(result[0][0]) if result and result[0] else 0
+
+            where_clause = " AND ".join(f"{col} = ?" for col in where_columns)
+            query = f"SELECT COUNT(*) as count FROM {table} WHERE {where_clause}"
+
+            cursor.execute(query, (*where_columns.values(),))
+            result = cursor.fetchall()
+
+            return bool(result[0][0]) if result and result[0] else False
 
         return method
 
@@ -453,35 +470,38 @@ class AutoDB:
         """ insert_{table_row}(columns_as_keyword_arguments) """
 
         table = _guess_table_from_method(name)
-
-        query = "INSERT INTO {} ({}) VALUES ({})"
-
         _log_call_context(name)
-        logger.debug(f"Prepared SQL query: {query}")
+        logger.debug(f"Prepared SQL query template for insert")
 
-        def method(**columns):
-            """ Sets columns with filter """
-
+        def method(self, **columns):
+            """ Insert row with columns """
             _log_call_context(name)
-            self._ensure_table_and_columns(table, list(columns.keys()))
-            with self.connection:
-                self.cursor.execute(
-                    query.format(
-                        table,
-                        ", ".join(columns.keys()),
-                        ", ".join(["?"] * len(columns))
-                    ),
-                    (*columns.values(),)
-                )
-                self.connection.commit()
+            conn = self._get_connection()
+            cursor = conn.cursor()
 
-                cs = " = ? AND ".join(columns.keys())
-                cs += " = ?"
-                self.cursor.execute(f"SELECT * FROM {table} WHERE {cs}", (*columns.values(),))
-                rows = self.cursor.fetchall()
-                self.cursor.execute(f"PRAGMA table_info({table})")
-                columns = [row[1] for row in self.cursor.fetchall()]
-                return [dict(zip(columns, row)) for row in rows]
+            self._ensure_table_and_columns(table, list(columns.keys()))
+
+            columns_names = ', '.join(columns.keys())
+            placeholders = ', '.join(['?'] * len(columns))
+            query = f"INSERT INTO {table} ({columns_names}) VALUES ({placeholders})"
+
+            logger.debug(f"Executing query: {query} with values: {tuple(columns.values())}")
+
+            cursor.execute(query, (*columns.values(),))
+            conn.commit()
+
+            # Get inserted row
+            where_clause = " AND ".join(f"{col} = ?" for col in columns.keys())
+            cursor.execute(f"SELECT * FROM {table} WHERE {where_clause}", (*columns.values(),))
+            rows = cursor.fetchall()
+
+            cursor.execute(f"PRAGMA table_info({table})")
+            column_names = [row[1] for row in cursor.fetchall()]
+
+            result = [dict(zip(column_names, row)) for row in rows]
+            logger.debug(f"Insert result: {result}")
+
+            return result
 
         return method
 
@@ -489,101 +509,93 @@ class AutoDB:
         """ delete_{table_row}(columns_as_keyword_arguments) """
 
         table = _guess_table_from_method(name)
-
-        query = "DELETE FROM {} WHERE {}"
-
         _log_call_context(name)
-        logger.debug(f"Prepared SQL query: {query}")
+        logger.debug(f"Prepared SQL query template for delete")
 
-        def method(**columns):
-            """ Sets columns with filter """
-
+        def method(self, **columns):
+            """ Delete row with columns """
             _log_call_context(name)
+            conn = self._get_connection()
+            cursor = conn.cursor()
+
             self._ensure_table_and_columns(table, list(columns.keys()))
+
             where_clause = " AND ".join(f"{col} = ?" for col in columns)
-            with self.connection:
-                self.cursor.execute(
-                    query.format(
-                        table,
-                        where_clause
-                    ),
-                    (*columns.values(),)
-                )
-                return self.cursor.rowcount
+            query = f"DELETE FROM {table} WHERE {where_clause}"
+
+            cursor.execute(query, (*columns.values(),))
+            conn.commit()
+
+            return cursor.rowcount
 
         return method
 
     # ------------------ Utilities ------------------
     def _ensure_table_and_columns(self, table: str, columns: list):
         """ Checks if table and columns exist and creates them if not """
+        conn = self._get_connection()
+        cursor = conn.cursor()
 
-        with self.connection:
-            self.cursor.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name = ?", (table,)
-            )
-            if not self.cursor.fetchone():
-                logger.warning(f"Table '{table}' does not exist. Creating...")
-                self._create_table(table)
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name = ?", (table,)
+        )
+        if not cursor.fetchone():
+            logger.warning(f"Table '{table}' does not exist. Creating...")
+            self._create_table(table)
 
-            self.cursor.execute(f"PRAGMA table_info({table})")
-            existing = {row[1] for row in self.cursor.fetchall()}
-            for column in columns:
-                if column not in existing:
-                    logger.warning(f"Column '{column}' does not exist in '{table}'. Creating...")
-                    sql = f"ALTER TABLE {table} ADD COLUMN {column} TEXT"
-                    logger.debug(f"Executing SQL: {sql}")
-                    self.cursor.execute(sql)
+        cursor.execute(f"PRAGMA table_info({table})")
+        existing = {row[1] for row in cursor.fetchall()}
+
+        for column in columns:
+            if column not in existing:
+                logger.warning(f"Column '{column}' does not exist in '{table}'. Creating...")
+                sql = f"ALTER TABLE {table} ADD COLUMN {column} TEXT"
+                logger.debug(f"Executing SQL: {sql}")
+                cursor.execute(sql)
 
     def _create_table(self, table: str):
         """ Creates a table with just an id column """
-
+        conn = self._get_connection()
+        cursor = conn.cursor()
         sql = f"CREATE TABLE {table} (id INTEGER PRIMARY KEY AUTOINCREMENT)"
         logger.debug(f"Creating table '{table}' with SQL: {sql}")
-        self.cursor.execute(sql)
+        cursor.execute(sql)
 
     def create_column_if_not_exists(self, table_name: str, column_name: str, column_type: str = "TEXT") -> None:
-        """
-        Создать столбец в таблице, если он не существует
+        """ Create column if it doesn't exist """
+        conn = self._get_connection()
+        cursor = conn.cursor()
 
-        Args:
-            table_name: Имя таблицы
-            column_name: Имя столбца
-            column_type: Тип столбца (по умолчанию TEXT)
-        """
+        cursor.execute(f"PRAGMA table_info({table_name})")
+        existing_columns = {row[1] for row in cursor.fetchall()}
 
-        with self.connection:
-            self.cursor.execute(f"PRAGMA table_info({table_name})")
-            existing_columns = {row[1] for row in self.cursor.fetchall()}
-
-            if column_name not in existing_columns:
-                self.cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}")
-                self.connection.commit()
+        if column_name not in existing_columns:
+            cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}")
+            conn.commit()
 
     def create_table_if_not_exists(self, table_name: str) -> None:
-        """
-        Создать таблицу, если она не существует
+        """ Create table if it doesn't exist """
+        conn = self._get_connection()
+        cursor = conn.cursor()
 
-        Args:
-            table_name: Имя таблицы
-        """
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name = ?",
+            (table_name,)
+        )
 
-        with self.connection:
-            self.cursor.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name = ?",
-                (table_name,)
-            )
+        if not cursor.fetchone():
+            cursor.execute(f"""
+                CREATE TABLE {table_name} (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            conn.commit()
 
-            if not self.cursor.fetchone():
-                self.cursor.execute(f"""
-                    CREATE TABLE {table_name} (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
-                self.connection.commit()
-
-    def execute(self, sql: str, params):
+    def execute(self, sql: str, params=None):
         """ Execute a custom SQL query with optional parameters """
+        conn = self._get_connection()
+        cursor = conn.cursor()
 
         sql_lower = sql.lower()
         tables = set()
@@ -604,12 +616,12 @@ class AutoDB:
         tables = {t for t in tables if t not in keywords}
 
         for table in tables:
-            self.cursor.execute(
+            cursor.execute(
                 "SELECT name FROM sqlite_master WHERE type='table' AND name = ?",
                 (table,)
             )
-            if not self.cursor.fetchone():
-                self.cursor.execute(f"""
+            if not cursor.fetchone():
+                cursor.execute(f"""
                     CREATE TABLE {table} (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -617,8 +629,8 @@ class AutoDB:
                 """)
 
         for table in tables:
-            self.cursor.execute(f"PRAGMA table_info({table})")
-            existing = {row[1] for row in self.cursor.fetchall()}
+            cursor.execute(f"PRAGMA table_info({table})")
+            existing = {row[1] for row in cursor.fetchall()}
 
             columns_to_check = set()
 
@@ -628,7 +640,6 @@ class AutoDB:
                 columns_to_check.update(cols)
 
             columns_to_check.update(re.findall(r'where\s+(\w+)\s*[=<>!]', sql_lower))
-
             columns_to_check.update(re.findall(r'set\s+(\w+)\s*=', sql_lower))
 
             insert_match = re.search(r'insert\s+into\s+\w+\s*\((.+?)\)', sql_lower)
@@ -639,16 +650,23 @@ class AutoDB:
             for col in columns_to_check:
                 if col not in existing and col not in ['id', '*'] and '(' not in col:
                     try:
-                        self.cursor.execute(f"ALTER TABLE {table} ADD COLUMN {col} TEXT")
+                        cursor.execute(f"ALTER TABLE {table} ADD COLUMN {col} TEXT")
                     except Exception:
                         pass
 
-        with self.connection:
-            if params:
-                self.cursor.execute(sql, params)
-            else:
-                self.cursor.execute(sql)
+        if params:
+            cursor.execute(sql, params)
+        else:
+            cursor.execute(sql)
 
-            if sql_lower.strip().startswith('select'):
-                return [dict(row) for row in self.cursor.fetchall()]
-            return
+        if sql_lower.strip().startswith('select'):
+            return [dict(row) for row in cursor.fetchall()]
+        return cursor.rowcount
+
+    async def execute_async(self, sql: str, params=None):
+        """ Async version of execute """
+        return await run_in_threadpool(self.execute, sql, params)
+
+
+# Создаем экземпляр менеджера соединений
+cm = ConnectionManager()

@@ -4,16 +4,16 @@
     <meta charset="UTF-8">
     <title>Мир</title>
     <link rel="stylesheet" href="../static/style.css">
-    <link rel="stylesheet" href="../static/chat.css">
-    <script src="/static/profile_change.js"></script>
+    <link rel="stylesheet" href="../static/form-container.css">
+    <script type="module" src="/static/register.js"></script>
 </head>
 <body>
 
-<div class="form-container" style="padding: 6rem 2rem;">
+<div class="form-container">
     <div class="title">Регистрация аккаунта</div>
     <div style="margin-bottom: 1rem;" class="subtitle">Есть аккаунт? <a href="/login">Вход</a></div>
     <p style="display: none;" class="error-text"></p>
-    <form action="/login" method="post" class="contact-form">
+    <form action="/login" method="post" class="login-form">
         <input id="first_name_input" type="text" name="first_name"
                placeholder="Имя" required
                maxlength="16"
@@ -26,11 +26,11 @@
                pattern="^[^\d]+$"
                title="Фамилия не должна содержать цифр">
 
-        <input id="phone_input" type="tel" name="phone"
-               placeholder="Телефон" required
-               minlength="4" maxlength="16"
-               pattern="^\s*\+\d+\s*$"
-               title="Введите номер в формате +123456789">
+<!--        <input id="phone_input" type="tel" name="phone"-->
+<!--               placeholder="Телефон" required-->
+<!--               minlength="4" maxlength="16"-->
+<!--               pattern="^\s*\+\d+\s*$"-->
+<!--               title="Введите номер в формате +123456789">-->
 
         <input id="email_input" type="email" name="email"
                placeholder="user@gmail.com" required
@@ -42,7 +42,7 @@
                minlength="8" maxlength="256"
                pattern="^\S+$">
 
-        <button type="submit">Зарегистрироваться</button>
+        <button class="btn" type="submit">Зарегистрироваться</button>
     </form>
 </div>
 
