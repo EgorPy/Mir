@@ -8,19 +8,86 @@
     <link rel="stylesheet" href="../static/message.css">
     <link rel="stylesheet" href="../static/app_header.css">
     <script src="/static/config.js"></script>
-    <script src="/static/profile_change.js"></script>
     <script src="/static/load_chats.js" type="module"></script>
 </head>
 <body>
 
+<aside class="sidebar" id="sidebar">
+    <nav class="sidebar-nav">
+        <ul>
+            <li><a href="/profile">Профиль</a></li>
+            <li>
+                <button>Создать группу</button>
+            </li>
+            <li>
+                <button>Создать канал</button>
+            </li>
+            <li>
+                <button>Избранное</button>
+            </li>
+            <li>
+                <button>Настройки</button>
+            </li>
+        </ul>
+    </nav>
+</aside>
+
+<div class="overlay" id="overlay"></div>
+
+<div class="modal" id="createGroupModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Создать новую группу</h2>
+            <button class="modal-close" id="closeModalBtn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="createGroupForm">
+                <div class="form-group">
+                    <label for="groupTitle">Название группы:</label>
+                    <input
+                            type="text"
+                            id="groupTitle"
+                            name="title"
+                            placeholder="Введите название группы"
+                            required
+                            autocomplete="off"
+                    >
+                </div>
+                <div class="form-group">
+                    <small>Название должно быть уникальным и не пустым</small>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-btn cancel-btn" id="cancelModalBtn">Отмена</button>
+            <button class="modal-btn create-btn" id="submitGroupBtn">Создать</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay"></div>
+
 <div class="app-header">
-    <a class="app-name" href="/">Мир</a>
+    <div class="menu-name">
+        <div class="burger" id="burgerBtn">
+            <button class="burger-inner">
+                <svg viewBox="0 0 24 24">
+                    <rect y="4" width="24" height="3" rx="1.5"/>
+                    <rect y="10.5" width="24" height="3" rx="1.5"/>
+                    <rect y="17" width="24" height="3" rx="1.5"/>
+                </svg>
+            </button>
+        </div>
+        <a class="app-name" href="/">Мир</a>
+    </div>
     <a class="profile-name" href="/profile">Егор</a>
 </div>
 
 <div class="chat-section">
     <div class="chats">
-        <div class="no-chats-yet" style="display: none;">У вас пока нет чатов, вы можете начать общение с людьми из ваших контактов.</div>
+        <div class="no-chats-yet" style="display: none;">У вас пока нет чатов, вы можете начать общение с людьми из ваших
+            контактов.
+        </div>
         <div class="chats-loading">Загрузка...</div>
         <!--        {% include "widgets/chat.js" %}-->
         <!--        {% include "widgets/chat.js" %}-->
@@ -43,5 +110,6 @@
 </div>
 
 <script src="../static/resizer.js"></script>
+<script src="/static/app_header.js"></script>
 </body>
 </html>

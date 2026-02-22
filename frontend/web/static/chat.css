@@ -127,6 +127,11 @@
     box-sizing: border-box;
     cursor: pointer;
     user-select: none;
+    transition: 0.2s;
+}
+
+.chat:hover {
+    background: #1e1428;
 }
 
 .chat .section {

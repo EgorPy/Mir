@@ -63,7 +63,7 @@ async def page_404(request, __):
     try:
         return templates.TemplateResponse("page404.html", {"request": request})
     except jinja2.exceptions.TemplateNotFound:
-        return PlainTextResponse("404 Not Found", status_code=404)
+        return PlainTextResponse("404 Not found", status_code=404)
 
 
 def start_server():

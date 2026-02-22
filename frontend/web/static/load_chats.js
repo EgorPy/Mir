@@ -1,10 +1,9 @@
-// load_chats.js
 import chatTemplateHtml from '/pages/widgets/chat.js';
+import { setupChatClickHandlers } from '/static/chat_dialog.js';
 
-// Правильное создание элемента из HTML строки
 const tempDiv = document.createElement('div');
 tempDiv.innerHTML = chatTemplateHtml;
-const chatTemplate = tempDiv.firstElementChild; // <-- используем firstElementChild вместо firstChild
+const chatTemplate = tempDiv.firstElementChild;
 
 if (!chatTemplate) {
     console.error('Failed to create chat template from:', chatTemplateHtml);
@@ -37,7 +36,7 @@ async function loadChats() {
 
         Array.from(chatsContainer.children).forEach(child => {
             if (!child.classList.contains('no-chats-yet') &&
-                !child.classList.contains('chats-loading')) {
+            !child.classList.contains('chats-loading')) {
                 child.remove();
             }
         });
@@ -61,6 +60,7 @@ async function loadChats() {
             }
 
             const chatElement = chatTemplate.cloneNode(true);
+            chatElement.setAttribute('data-chat-id', chat.id);
             const nameElement = chatElement.querySelector('.chat-name');
             const link = chatElement.querySelector('a');
             const lastMessage = chatElement.querySelector('.chat-last-message');
@@ -71,6 +71,8 @@ async function loadChats() {
 
             chatsContainer.appendChild(chatElement);
         });
+
+        setupChatClickHandlers();
     } catch (error) {
         console.error('Error loading chats:', error);
         const chatsContainer = document.querySelector('.chats');
@@ -122,18 +124,20 @@ async function deleteChat(chatId) {
     }
 }
 
-// Не вызываем createChat автоматически
 document.addEventListener('DOMContentLoaded', async () => {
-    await loadChats();  // сначала загружаем существующие чаты
+    await loadChats();
 
-    // Проверяем, есть ли уже чаты
     const baseUrl = window.BACKEND_URL || '';
     const response = await fetch(`${baseUrl}/chats/list`);
     const chats = await response.json();
 
-    // Если чатов нет, создаем тестовый
     if (Object.keys(chats).length === 0) {
-        await createChat('Чатик');
         await createChat('Family');
+        await createChat('Чатик');
+        await createChat('Чатик 2');
+        await createChat('Чатик 3');
+        await createChat('Чатик 4');
+        await createChat('Чатик 5');
+        await createChat('Чатик 6');
     }
 });
