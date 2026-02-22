@@ -1,0 +1,20 @@
+.message {
+    padding: 0.8rem;
+    border-radius: 10px;
+    background: #1a1122;
+    margin: 1rem;
+    max-width: 40vw;
+}
+
+.message .text {
+    padding: 0.5rem 0;
+    font-size: 1.5rem;
+}
+
+.message .sender-name {
+    font-size: 1rem;
+}
+
+.message .message-date {
+    font-size: 1rem;
+}

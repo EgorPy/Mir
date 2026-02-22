@@ -73,12 +73,67 @@ def start_server():
     uvicorn.run(app, host=config.DOMAIN, port=int(config.FRONTEND_PORT), reload=False)
 
 
+@app.get("/test-widgets-deep")
+async def test_widgets_deep():
+    import os
+    from pathlib import Path
+
+    widgets_path = Path("frontend/web/widgets")
+    result = {
+        "path": str(widgets_path.absolute()),
+        "exists": widgets_path.exists(),
+        "is_dir": widgets_path.is_dir() if widgets_path.exists() else False,
+        "files": []
+    }
+
+    if widgets_path.exists() and widgets_path.is_dir():
+        # Рекурсивно собираем все файлы
+        for root, dirs, files in os.walk(widgets_path):
+            rel_path = Path(root).relative_to(widgets_path)
+            for file in files:
+                result["files"].append(str(rel_path / file) if str(rel_path) != '.' else file)
+
+    return result
+
+
+@app.get("/debug-chat-js")
+async def debug_chat_js():
+    import os
+    from pathlib import Path
+
+    chat_js_path = Path("frontend/web/pages/widgets/chat.js")
+
+    # Пробуем разными способами прочитать файл
+    result = {
+        "path": str(chat_js_path.absolute()),
+        "exists": chat_js_path.exists(),
+        "is_file": chat_js_path.is_file() if chat_js_path.exists() else False,
+    }
+
+    if chat_js_path.exists():
+        # Права доступа
+        result["readable"] = os.access(chat_js_path, os.R_OK)
+        result["writable"] = os.access(chat_js_path, os.W_OK)
+
+        # Размер и содержимое
+        try:
+            result["size"] = chat_js_path.stat().st_size
+            # Пробуем прочитать первые 100 символов
+            with open(chat_js_path, 'r', encoding='utf-8') as f:
+                result["content_preview"] = f.read(100)
+        except Exception as e:
+            result["read_error"] = str(e)
+
+    return result
+
+
 def run():
     """ Starts the server """
 
     global app, pages_dir, templates
 
     app.mount("/static", StaticFiles(directory="frontend/web/static"), name="static")
+    app.mount("/pages/widgets", StaticFiles(directory="frontend/web/pages/widgets"), name="pages_widgets")
     pages_dir = Path("frontend/web/pages")
     templates = Jinja2Templates(directory=pages_dir)
 

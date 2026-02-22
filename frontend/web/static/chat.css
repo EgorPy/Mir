@@ -3,22 +3,6 @@
     flex-direction: row;
     justify-content: space-between;
     font-size: 1rem;
-}
-
-.chat-section * {
-    font-family: "native";
-    font-weight: 100;
-}
-
-.actual-chat {
-    flex: 1;
-}
-
-.chat-section {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    font-size: 1rem;
     flex: 1;
     min-height: 0;
 }
@@ -30,23 +14,17 @@
 
 .actual-chat {
     flex: 1;
+    background: #0f0a14;
 }
 
 .chats {
-    flex: 1;
+/*    flex: 1;*/
     height: 100%;
-    overflow-y: auto; /* Скролл при переполнении */
-}
-
-.chats {
-    flex: 1;
-    height: 100vh;
-    overflow: hidden;
+    overflow-y: auto;
 }
 
 .chat .section {
 /*    border: 1px solid white;*/
-    background: black;
     display: flex;
     justify-content: flex-start;
     align-items: center;
@@ -54,11 +32,12 @@
 
 .chat img {
     border-radius: 50%;
-    width: 8rem;
-    line-height: 8rem;
-    height: 8rem;
-    margin: 1rem;
+    width: 4rem;
+    height: 4rem;
+    line-height: 4rem;
     text-align: center;
+    margin: 1rem;
+    flex-shrink: 0;
 }
 
 .chat-info {
@@ -75,4 +54,91 @@
 
 .chat-info .chat-last-message {
     margin: 0.8rem 0;
+}
+
+.chats::-webkit-scrollbar,
+.actual-chat::-webkit-scrollbar {
+    width: 8px;
+}
+
+.chats::-webkit-scrollbar-track,
+.actual-chat::-webkit-scrollbar-track {
+    background: #1a1a1a;
+}
+
+.chats::-webkit-scrollbar-thumb,
+.actual-chat::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 4px;
+}
+
+.chats::-webkit-scrollbar-button,
+.actual-chat::-webkit-scrollbar-button {
+    display: none;
+}
+
+/* Resizer */
+.chats, .actual-chat {
+    overflow: auto;
+}
+
+.chats {
+    flex: 0 0 auto;
+    width: 45%;
+    min-width: 30%;
+    max-width: 70%
+}
+
+.actual-chat {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.resizer {
+    width: 5px;
+    background: #333;
+    cursor: col-resize;
+    transition: 0.2s;
+    flex-shrink: 0;
+}
+
+.resizer:hover,
+.resizer:active {
+    background: #666;
+}
+
+.chat-info {
+    min-width: 0;
+    flex: 1;
+}
+
+.chat-info .chat-name,
+.chat-info .chat-last-message {
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
+}
+
+.chat {
+    background: #150e1c;
+    width: 100%;
+    box-sizing: border-box;
+    cursor: pointer;
+    user-select: none;
+}
+
+.chat .section {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.chats-loading,
+.select-chat,
+.no-chats-yet {
+    font-size: 1.5rem;
+    margin-top: 4rem;
+    text-align: center;
+    user-select: none;
 }

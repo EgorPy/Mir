@@ -17,7 +17,7 @@ import sys
 app = FastAPI()
 
 app.include_router(auth_router, prefix="/auth", tags=["Auth"])
-app.include_router(chats_router)
+app.include_router(chats_router, prefix="/chats", tags=["Chats"])
 
 app.add_middleware(
     CORSMiddleware,

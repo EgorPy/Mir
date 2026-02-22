@@ -5,8 +5,11 @@
     <title>Мир</title>
     <link rel="stylesheet" href="../static/style.css">
     <link rel="stylesheet" href="../static/chat.css">
+    <link rel="stylesheet" href="../static/message.css">
     <link rel="stylesheet" href="../static/app_header.css">
+    <script src="/static/config.js"></script>
     <script src="/static/profile_change.js"></script>
+    <script src="/static/load_chats.js" type="module"></script>
 </head>
 <body>
 
@@ -17,17 +20,28 @@
 
 <div class="chat-section">
     <div class="chats">
-        {% include "widgets/chat.html" %}
-        {% include "widgets/chat.html" %}
-        {% include "widgets/chat.html" %}
-        {% include "widgets/chat.html" %}
-        {% include "widgets/chat.html" %}
-        {% include "widgets/chat.html" %}
+        <div class="no-chats-yet" style="display: none;">У вас пока нет чатов, вы можете начать общение с людьми из ваших контактов.</div>
+        <div class="chats-loading">Загрузка...</div>
+        <!--        {% include "widgets/chat.js" %}-->
+        <!--        {% include "widgets/chat.js" %}-->
+        <!--        {% include "widgets/chat.js" %}-->
+        <!--        {% include "widgets/chat.js" %}-->
+        <!--        {% include "widgets/chat.js" %}-->
+        <!--        {% include "widgets/chat.js" %}-->
+        <!--        {% include "widgets/chat.js" %}-->
     </div>
+    <div class="resizer"></div>
     <div class="actual-chat">
-        <h1>Hello, world</h1>
+        <div class="select-chat">Выберите чат для начала общения.</div>
+        <!--        {% include "widgets/message.js" %}-->
+        <!--        {% include "widgets/message.js" %}-->
+        <!--        {% include "widgets/message.js" %}-->
+        <!--        {% include "widgets/message.js" %}-->
+        <!--        {% include "widgets/message.js" %}-->
+        <!--        {% include "widgets/message.js" %}-->
     </div>
 </div>
 
+<script src="../static/resizer.js"></script>
 </body>
 </html>

@@ -22,7 +22,7 @@ def generate_config_js():
 
     backend_url = f"http://{config.DOMAIN}:{config.BACKEND_PORT}"
 
-    js_content = f'export const BACKEND_URL = "{backend_url}";\n\nwindow.BACKEND_URL = BACKEND_URL;\n'
+    js_content = f'const BACKEND_URL = "{backend_url}";\n\nwindow.BACKEND_URL = BACKEND_URL;\n'
 
     os.makedirs(os.path.dirname(target_path), exist_ok=True)
 
