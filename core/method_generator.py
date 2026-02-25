@@ -475,6 +475,7 @@ class AutoDB:
 
         def method(self, **columns):
             """ Insert row with columns """
+
             _log_call_context(name)
             conn = self._get_connection()
             cursor = conn.cursor()
@@ -665,8 +666,8 @@ class AutoDB:
 
     async def execute_async(self, sql: str, params=None):
         """ Async version of execute """
+
         return await run_in_threadpool(self.execute, sql, params)
 
 
-# Создаем экземпляр менеджера соединений
 cm = ConnectionManager()

@@ -11,7 +11,7 @@ export async function loadMessages(chatId) {
         currentChatId = chatId;
 
         const baseUrl = window.BACKEND_URL || '';
-        const response = await fetch(`${baseUrl}/chats/messages/${chatId}`);
+        const response = await fetch(`${baseUrl}/chats/${chatId}/messages`);
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -29,11 +29,9 @@ export async function loadMessages(chatId) {
             }
         });
 
-        // Убираем сообщение "Выберите чат"
         const selectChat = actualChat.querySelector('.select-chat');
         if (selectChat) selectChat.style.display = 'none';
 
-        // Добавляем сообщения
         messages.forEach(msg => {
             const messageElement = messageTemplate.cloneNode(true);
 
@@ -50,7 +48,6 @@ export async function loadMessages(chatId) {
             actualChat.appendChild(messageElement);
         });
 
-        // Скролл вниз
         actualChat.scrollTop = actualChat.scrollHeight;
 
     } catch (error) {
@@ -66,7 +63,7 @@ export async function sendMessage(text) {
 
     try {
         const baseUrl = window.BACKEND_URL || '';
-        const response = await fetch(`${baseUrl}/chats/messages/send`, {
+        const response = await fetch(`${baseUrl}/chats/${chatId}/messages/send`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -96,13 +93,13 @@ function formatTime(isoString) {
     });
 }
 
-// Функция для установки обработчиков на чаты
 export function setupChatClickHandlers() {
     document.querySelector('.chats').addEventListener('click', (e) => {
-        const chatElement = e.target.closest('.chat');
+        const chatElement = e.target.closest('.chat-main');
         if (!chatElement) return;
 
         const chatId = chatElement.dataset.chatId;
+        console.log(chatId);
         if (chatId) {
             document.querySelectorAll('.chat.selected').forEach(el => {
                 el.classList.remove('selected');

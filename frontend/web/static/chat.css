@@ -10,6 +10,7 @@
 .chat-section * {
     font-family: "native";
     font-weight: 100;
+/*    font-style: italic;*/
 }
 
 .actual-chat {

@@ -65,11 +65,9 @@ async function loadChats() {
             const chatElement = chatTemplate.cloneNode(true);
             chatElement.setAttribute('data-chat-id', chat.id);
             const nameElement = chatElement.querySelector('.chat-name');
-            const link = chatElement.querySelector('a');
             const lastMessage = chatElement.querySelector('.chat-last-message');
 
             if (nameElement) nameElement.textContent = chat.title;
-            if (link) link.href = `/chats/${chat.id}`;
             if (lastMessage) lastMessage.textContent = '';
 
             chatsContainer.appendChild(chatElement);

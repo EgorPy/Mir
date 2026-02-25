@@ -1,19 +1,14 @@
 from core.method_generator import AutoDB, ConnectionManager, cm
-from core.logger import logger
 
 from backend.services.auth.api.auth import check_user_session
 
-from fastapi import APIRouter, HTTPException
 from fastapi.params import Depends
 from pydantic import BaseModel
-from typing import Dict, List
-from datetime import datetime
+from fastapi import APIRouter
+from fastapi import status
 from uuid import uuid4
 
 router = APIRouter()
-
-
-# cm уже импортирован из core.method_generator, не нужно создавать новый
 
 
 class Service:
@@ -27,12 +22,13 @@ SERVICE = Service(
     app=router
 )
 
-CHATS: Dict[str, Dict[str, str]] = {}
-MESSAGES: Dict[str, List[Dict]] = {}
-
 
 class ChatCreate(BaseModel):
     title: str
+
+
+class ChatDelete(BaseModel):
+    chat_id: str
 
 
 @router.get("/list")
@@ -50,15 +46,13 @@ async def list_chats(
     )
 
     chats_dict = {}
-    if result:
-        for chat in result:
-            if hasattr(chat, 'keys'):
-                chat_dict = dict(chat)
-            else:
-                chat_dict = chat
-            chats_dict[chat_dict['id']] = chat_dict
+    if not result:
+        return chats_dict
 
-    print(f"DEBUG: Returning {len(chats_dict)} chats")
+    for chat in result:
+        chat_dict = dict(chat) if hasattr(chat, "keys") else chat
+        chats_dict[chat_dict['id']] = chat_dict
+
     return chats_dict
 
 
@@ -69,65 +63,33 @@ async def create_chat(
         connection_manager: ConnectionManager = Depends(cm.dependency)
 ):
     db = AutoDB(connection_manager)
-    chat_id = str(uuid4())
 
     result = await db.insert_chat(
-        id=chat_id,
         owner_id=str(user_id),
         title=str(data.title)
     )
 
-    return {"ok": True, "id": chat_id, "result": result}
+    if not result:
+        return {"ok": False}
 
-
-class ChatDelete(BaseModel):
-    chat_id: str
+    return {"ok": True, "id": result[0].get("id", None), "result": result[0]}
 
 
 @router.post("/delete")
-def delete_chat(data: ChatDelete):
-    if data.chat_id not in CHATS:
-        raise HTTPException(status_code=404, detail="Chat not found")
+async def delete_chat(
+        data: ChatDelete,
+        user_id: str = Depends(check_user_session),
+        connection_manager: ConnectionManager = Depends(cm.dependency)
+):
+    db = AutoDB(connection_manager)
 
-    del CHATS[data.chat_id]
-    if data.chat_id in MESSAGES:
-        del MESSAGES[data.chat_id]
-    return {"ok": True}
+    is_owner = await db.execute_async("SELECT COUNT(id) FROM chats WHERE owner_id = ? AND id = ?",
+                                      (user_id, str(data.chat_id)))
+    if not is_owner:
+        return status.HTTP_403_FORBIDDEN
 
+    result = await db.delete_chat(
+        id=str(data.chat_id)
+    )
 
-class MessageSend(BaseModel):
-    chat_id: str
-    text: str
-    author: str
-
-
-@router.post("/messages/send")
-def send_message(data: MessageSend):
-    """ Send a message to a chat """
-
-    if data.chat_id not in CHATS:
-        raise HTTPException(status_code=404, detail="Chat not found")
-
-    message = {
-        "id": str(uuid4()),
-        "chat_id": data.chat_id,
-        "text": data.text,
-        "author": data.author,
-        "time": datetime.now().isoformat()
-    }
-
-    if data.chat_id not in MESSAGES:
-        MESSAGES[data.chat_id] = []
-
-    MESSAGES[data.chat_id].append(message)
-    return {"ok": True, "message": message}
-
-
-@router.get("/messages/{chat_id}")
-def get_messages(chat_id: str):
-    """ Get all messages for a specific chat """
-
-    if chat_id not in CHATS:
-        raise HTTPException(status_code=404, detail="Chat not found")
-
-    return MESSAGES.get(chat_id, [])
+    return {"ok": bool(result)}
