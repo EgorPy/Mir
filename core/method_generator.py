@@ -3,12 +3,12 @@
 from core.logger import logger
 
 from fastapi.concurrency import run_in_threadpool
-from functools import wraps, partial
+from functools import wraps
+import threading
 import inspect
 import sqlite3
 import re
 import os
-import threading
 
 
 def async_db_method(func):
@@ -136,6 +136,7 @@ class AutoDB:
                     self._parse_get_with_status_table,
                     self._parse_get_by_column,
                     self._parse_get_column_from_table,
+                    self._parse_get_table,
             ):
                 method = parser(name)
                 if method:
@@ -249,6 +250,7 @@ class AutoDB:
 
         def method(self, **columns):
             """ Returns column selected by columns """
+
             _log_call_context(name)
             conn = self._get_connection()
             cursor = conn.cursor()
@@ -275,6 +277,39 @@ class AutoDB:
 
         return method
 
+    def _parse_get_table(self, name: str):
+        """ get_{table_name}(columns_as_keyword_arguments) """
+
+        match = re.match(r"^get_(\w+)$", name)
+        if not match:
+            return None
+
+        table = match.group(1)
+
+        def method(self, **columns):
+            conn = self._get_connection()
+            cursor = conn.cursor()
+
+            self._ensure_table_and_columns(table, list(columns.keys()))
+
+            query = f"SELECT * FROM {table}"
+            params = []
+
+            if columns:
+                where_clause = " AND ".join(f"{col}=?" for col in columns)
+                query += f" WHERE {where_clause}"
+                params = list(columns.values())
+
+            cursor.execute(query, tuple(params))
+            rows = cursor.fetchall()
+
+            cursor.execute(f"PRAGMA table_info({table})")
+            columns = [row[1] for row in cursor.fetchall()]
+
+            return [dict(zip(columns, row)) for row in rows]
+
+        return method
+
     def _parse_set_with_status_table(self, name: str):
         """ set_{column}_with_{status}_{table}() or set_{column}_and_{column}_with_{status}_{table}() """
 
@@ -291,6 +326,7 @@ class AutoDB:
 
         def method(self, *values):
             """ Sets columns with status """
+
             _log_call_context(name)
             conn = self._get_connection()
             cursor = conn.cursor()
@@ -515,6 +551,7 @@ class AutoDB:
 
         def method(self, **columns):
             """ Delete row with columns """
+
             _log_call_context(name)
             conn = self._get_connection()
             cursor = conn.cursor()
@@ -534,6 +571,7 @@ class AutoDB:
     # ------------------ Utilities ------------------
     def _ensure_table_and_columns(self, table: str, columns: list):
         """ Checks if table and columns exist and creates them if not """
+
         conn = self._get_connection()
         cursor = conn.cursor()
 
@@ -556,6 +594,7 @@ class AutoDB:
 
     def _create_table(self, table: str):
         """ Creates a table with just an id column """
+
         conn = self._get_connection()
         cursor = conn.cursor()
         sql = f"CREATE TABLE {table} (id INTEGER PRIMARY KEY AUTOINCREMENT)"
@@ -564,6 +603,7 @@ class AutoDB:
 
     def create_column_if_not_exists(self, table_name: str, column_name: str, column_type: str = "TEXT") -> None:
         """ Create column if it doesn't exist """
+
         conn = self._get_connection()
         cursor = conn.cursor()
 
@@ -576,6 +616,7 @@ class AutoDB:
 
     def create_table_if_not_exists(self, table_name: str) -> None:
         """ Create table if it doesn't exist """
+
         conn = self._get_connection()
         cursor = conn.cursor()
 
@@ -595,6 +636,7 @@ class AutoDB:
 
     def execute(self, sql: str, params=None):
         """ Execute a custom SQL query with optional parameters """
+
         conn = self._get_connection()
         cursor = conn.cursor()
 

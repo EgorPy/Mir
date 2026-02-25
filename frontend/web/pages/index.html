@@ -10,6 +10,7 @@
     <script src="/static/check_auth.js" type="module"></script>
     <script src="/static/load_chats.js" type="module"></script>
     <script src="/static/create_group.js" type="module"></script>
+    <script src="/static/messages.js" type="module"></script>
 </head>
 <body>
 
@@ -83,23 +84,20 @@
             контактов.
         </div>
         <div class="chats-loading">Загрузка...</div>
-        <!--        {% include "widgets/chat.js" %}-->
-        <!--        {% include "widgets/chat.js" %}-->
-        <!--        {% include "widgets/chat.js" %}-->
-        <!--        {% include "widgets/chat.js" %}-->
-        <!--        {% include "widgets/chat.js" %}-->
-        <!--        {% include "widgets/chat.js" %}-->
-        <!--        {% include "widgets/chat.js" %}-->
     </div>
     <div class="resizer"></div>
+
     <div class="actual-chat">
+        <div class="chat-header" style="display: none;">
+            <button class="close-chat-btn">&#8592;</button>
+            <div class="chat-title">Название чата</div>
+        </div>
         <div class="select-chat">Выберите чат для начала общения.</div>
-        <!--        {% include "widgets/message.js" %}-->
-        <!--        {% include "widgets/message.js" %}-->
-        <!--        {% include "widgets/message.js" %}-->
-        <!--        {% include "widgets/message.js" %}-->
-        <!--        {% include "widgets/message.js" %}-->
-        <!--        {% include "widgets/message.js" %}-->
+        <div class="messages-container"></div>
+        <div class="chat-input" style="display: none;">
+            <input type="text" class="message-input" placeholder="Введите сообщение..." autocomplete="off"/>
+            <button class="send-message-btn">Отправить</button>
+        </div>
     </div>
 </div>
 

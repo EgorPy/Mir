@@ -5,8 +5,8 @@ from backend.services.auth.api.auth import check_user_session
 from fastapi.params import Depends
 from pydantic import BaseModel
 from fastapi import APIRouter
+from datetime import datetime
 from fastapi import status
-from uuid import uuid4
 
 router = APIRouter()
 
@@ -93,3 +93,54 @@ async def delete_chat(
     )
 
     return {"ok": bool(result)}
+
+
+class MessageCreate(BaseModel):
+    text: str
+
+
+@router.get("/{chat_id}/messages")
+async def get_messages(
+        chat_id: str,
+        connection_manager: ConnectionManager = Depends(cm.dependency)
+):
+    db = AutoDB(connection_manager)
+
+    query = """
+        SELECT 
+            m.id,
+            m.chat_id,
+            m.text,
+            m.created_at,
+            u.first_name || ' ' || u.last_name AS author
+        FROM messages m
+        LEFT JOIN users u ON m.author = u.id
+        WHERE m.chat_id = ?
+        ORDER BY m.created_at ASC
+    """
+
+    messages = await db.execute_async(query, (chat_id,))
+    return messages
+
+
+@router.post("/{chat_id}/messages/send")
+async def send_message(
+        chat_id: str,
+        data: MessageCreate,
+        user_id: str = Depends(check_user_session),
+        connection_manager: ConnectionManager = Depends(cm.dependency)
+):
+    db = AutoDB(connection_manager)
+
+    inserted = await db.insert_messages(
+        chat_id=str(chat_id),
+        text=data.text,
+        author=str(user_id),
+        created_at=datetime.now().replace(microsecond=0)
+    )
+
+    if not inserted:
+        return {"ok": False}
+
+    messages = await db.get_messages(chat_id=chat_id)
+    return {"ok": True, "messages": messages}

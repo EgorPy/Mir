@@ -5,50 +5,33 @@ tempDiv.innerHTML = messageTemplateHtml;
 const messageTemplate = tempDiv.firstElementChild;
 
 let currentChatId = null;
+let inputInitialized = false;
 
 export async function loadMessages(chatId) {
-    try {
-        currentChatId = chatId;
+    currentChatId = chatId;
 
+    const messagesContainer = document.querySelector('.messages-container');
+    if (!messagesContainer) return;
+
+    messagesContainer.innerHTML = '';
+
+    try {
         const baseUrl = window.BACKEND_URL || '';
         const response = await fetch(`${baseUrl}/chats/${chatId}/messages`);
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
 
         const messages = await response.json();
-        console.log('Messages loaded:', messages);
-
-        const actualChat = document.querySelector('.actual-chat');
-        if (!actualChat) return;
-
-        Array.from(actualChat.children).forEach(child => {
-            if (!child.classList.contains('select-chat')) {
-                child.remove();
-            }
-        });
-
-        const selectChat = actualChat.querySelector('.select-chat');
-        if (selectChat) selectChat.style.display = 'none';
 
         messages.forEach(msg => {
             const messageElement = messageTemplate.cloneNode(true);
-
-            const authorEl = messageElement.querySelector('.message-author');
-            const timeEl = messageElement.querySelector('.message-time');
-            const textEl = messageElement.querySelector('.message-text');
-            const avatarEl = messageElement.querySelector('.message-avatar img');
-
-            if (authorEl) authorEl.textContent = msg.author;
-            if (timeEl) timeEl.textContent = formatTime(msg.time);
-            if (textEl) textEl.textContent = msg.text;
-            if (avatarEl) avatarEl.alt = msg.author;
-
-            actualChat.appendChild(messageElement);
+            messageElement.querySelector('.message-author').textContent = msg.author;
+            messageElement.querySelector('.message-date').textContent = formatTime(msg.created_at);
+            messageElement.querySelector('.message-text').textContent = msg.text;
+            messagesContainer.appendChild(messageElement);
         });
 
-        actualChat.scrollTop = actualChat.scrollHeight;
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
     } catch (error) {
         console.error('Error loading messages:', error);
@@ -56,58 +39,62 @@ export async function loadMessages(chatId) {
 }
 
 export async function sendMessage(text) {
-    if (!currentChatId) {
-        console.error('No chat selected');
-        return;
-    }
+    if (!currentChatId) return;
 
     try {
         const baseUrl = window.BACKEND_URL || '';
-        const response = await fetch(`${baseUrl}/chats/${chatId}/messages/send`, {
+        const response = await fetch(`${baseUrl}/chats/${currentChatId}/messages/send`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                chat_id: currentChatId,
-                text: text,
-                author: 'Я'
-            })
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text, author: 'Я' })
         });
 
         const result = await response.json();
         if (result.ok) {
             await loadMessages(currentChatId);
         }
-        return result;
+
     } catch (error) {
         console.error('Error sending message:', error);
     }
 }
 
 function formatTime(isoString) {
+    if (!isoString) return "";
+
     const date = new Date(isoString);
+
+    if (isNaN(date)) return "";
+
     return date.toLocaleTimeString('ru-RU', {
         hour: '2-digit',
         minute: '2-digit'
     });
 }
 
-export function setupChatClickHandlers() {
-    document.querySelector('.chats').addEventListener('click', (e) => {
-        const chatElement = e.target.closest('.chat-main');
-        if (!chatElement) return;
 
-        const chatId = chatElement.dataset.chatId;
-        console.log(chatId);
-        if (chatId) {
-            document.querySelectorAll('.chat.selected').forEach(el => {
-                el.classList.remove('selected');
-            });
+export function setupMessageInput() {
+    if (inputInitialized) return;
+    inputInitialized = true;
 
-            chatElement.classList.add('selected');
+    const input = document.querySelector('.message-input');
+    const button = document.querySelector('.send-message-btn');
+    if (!input || !button) return;
 
-            loadMessages(chatId);
+    button.addEventListener('click', async () => {
+        const text = input.value.trim();
+        if (!text) return;
+        await sendMessage(text);
+        input.value = '';
+        const messagesContainer = document.querySelector('.messages-container');
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    });
+
+    input.addEventListener('keydown', async (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            button.click();
         }
     });
 }
