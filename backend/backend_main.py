@@ -21,7 +21,7 @@ app.include_router(chats_router, prefix="/chats", tags=["Chats"])
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=f"http://{config.DOMAIN}:{config.FRONTEND_PORT}",  # f"http://{config.DOMAIN}:{config.FRONTEND_PORT}"
+    allow_origins=[f"http://{config.DOMAIN}:{config.FRONTEND_PORT}"],  # f"http://{config.DOMAIN}:{config.FRONTEND_PORT}"
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -24,11 +24,11 @@ async def login(
         email: Annotated[str, Form(min_length=5, max_length=256,
                                    pattern=r"^\s*[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+\s*$")],
         password: Annotated[str, Form(min_length=8, max_length=256, pattern=r"^\S+$")],
-        connection=Depends(cm.dependency)
+        connection_manager: ConnectionManager = Depends(cm.dependency)
 ):
     """ Login endpoint """
 
-    session_id = await AuthLogic.login_user(email, password, connection)
+    session_id = await AuthLogic.login_user(email, password)
 
     if not session_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")

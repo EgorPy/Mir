@@ -18,6 +18,8 @@ export function openChat(chatId, title) {
     const selectChat = actualChat.querySelector('.select-chat');
     if (selectChat) selectChat.style.display = 'none';
 
+    chatHeader.setAttribute('data-chat-id', chatId);
+
     messagesContainer.innerHTML = '';
     actualChat.dataset.chatId = chatId;
 

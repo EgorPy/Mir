@@ -1,3 +1,5 @@
+import { adjustChatHeader } from './chat_title.js'
+
 (function() {
     const resizer = document.querySelector('.resizer');
     const chats = document.querySelector('.chats');
@@ -18,6 +20,7 @@
         chats.style.width = width + 'px';
         chats.style.flex = 'none';
         actualChat.style.flex = '1';
+        adjustChatHeader();
     }
 
     function stopDrag() {

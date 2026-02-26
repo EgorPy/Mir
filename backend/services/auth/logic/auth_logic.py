@@ -6,6 +6,7 @@ from core.method_generator import AutoDB, cm
 from core.config import config
 
 from datetime import datetime, timedelta
+from uuid import uuid4
 
 
 class AuthLogic:
@@ -22,6 +23,7 @@ class AuthLogic:
 
         expires_at = str(datetime.now() + timedelta(seconds=int(config.SESSION_DURATION)))
         response = await db.insert_session(
+            id=str(uuid4()),
             user_id=user_id,
             duration=config.SESSION_DURATION,
             expires_at=expires_at

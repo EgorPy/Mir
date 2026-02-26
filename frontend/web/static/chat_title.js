@@ -1,6 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
-    window.addEventListener('resize', adjustChatHeader);
-});
+window.addEventListener('resize', adjustChatHeader);
 
 export function adjustChatHeader() {
     const actualChat = document.querySelector('.actual-chat');

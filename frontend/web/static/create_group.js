@@ -1,26 +1,21 @@
+import { openModal, closeModal } from '/static/modal.js';
+
 document.addEventListener('DOMContentLoaded', function() {
     const createGroupBtn = document.getElementById('createGroupBtn');
     const modal = document.getElementById('createGroupModal');
     const overlay = document.getElementById('overlay');
-    const cancelModalBtn = document.getElementById('cancelModalBtn');
-    const submitBtn = document.getElementById('submitGroupBtn');
-    const form = document.getElementById('createGroupForm');
-    const groupTitleInput = document.getElementById('groupTitle');
 
-    if (!createGroupBtn || !modal || !overlay || !cancelModalBtn || !submitBtn || !form || !groupTitleInput) {
+    if (!createGroupBtn || !modal || !overlay) {
         console.error('Unable to find needed elements');
         return;
     }
 
-    function openModal() {
-        modal.classList.add('active');
-        overlay.classList.add('active');
-        groupTitleInput.focus();
-
-        const sidebar = document.getElementById('sidebar');
-        if (sidebar && sidebar.classList.contains('active')) {
-            sidebar.classList.remove('active');
-        }
+    function getModalElements() {
+        const form = document.getElementById('createGroupForm');
+        const groupTitleInput = document.getElementById('groupTitle');
+        const submitBtn = document.getElementById('submitGroupBtn');
+        const cancelBtn = document.getElementById('cancelModalBtn');
+        return { form, groupTitleInput, submitBtn, cancelBtn };
     }
 
     function closeModal() {
@@ -31,17 +26,30 @@ document.addEventListener('DOMContentLoaded', function() {
             overlay.classList.remove('active');
         }
 
-        form.reset();
+        const { form } = getModalElements();
+        if (form) {
+            form.reset();
+        }
 
         const messages = document.querySelectorAll('.error-message, .success-message');
         messages.forEach(msg => msg.remove());
 
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Создать';
-        submitBtn.classList.remove('loading');
+        const { submitBtn } = getModalElements();
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Создать';
+            submitBtn.classList.remove('loading');
+        }
     }
 
     async function handleCreateGroup() {
+        const { groupTitleInput, submitBtn } = getModalElements();
+
+        if (!groupTitleInput || !submitBtn) {
+            console.error('Modal elements not found');
+            return;
+        }
+
         const title = groupTitleInput.value.trim();
 
         if (!title) {
@@ -81,14 +89,79 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             console.error('Create group error:', error);
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Создать';
-            submitBtn.classList.remove('loading');
+            const { submitBtn } = getModalElements();
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Создать';
+                submitBtn.classList.remove('loading');
+            }
         }
     }
 
-    createGroupBtn.addEventListener('click', openModal);
-    cancelModalBtn.addEventListener('click', closeModal);
+    function setupDynamicEventListeners() {
+        const { groupTitleInput, submitBtn, cancelBtn } = getModalElements();
+
+        if (groupTitleInput) {
+            groupTitleInput.removeEventListener('keypress', handleKeyPress);
+            groupTitleInput.removeEventListener('input', handleInput);
+
+            groupTitleInput.addEventListener('keypress', handleKeyPress);
+            groupTitleInput.addEventListener('input', handleInput);
+        }
+
+        if (submitBtn) {
+            submitBtn.removeEventListener('click', handleCreateGroup);
+            submitBtn.addEventListener('click', handleCreateGroup);
+        }
+
+        if (cancelBtn) {
+            cancelBtn.removeEventListener('click', closeModal);
+            cancelBtn.addEventListener('click', closeModal);
+        }
+    }
+
+    function handleKeyPress(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleCreateGroup();
+        }
+    }
+
+    function handleInput() {
+        const errorMsg = document.querySelector('.error-message');
+        if (errorMsg) {
+            errorMsg.remove();
+        }
+    }
+
+    createGroupBtn.addEventListener('click', () => {
+        openModal(`
+            <div class="modal-header">
+                <h2>Создать группу</h2>
+            </div>
+            <div class="modal-body">
+                <form id="createGroupForm">
+                    <div class="form-group">
+                        <input
+                            type="text"
+                            id="groupTitle"
+                            name="title"
+                            placeholder="Введите название группы"
+                            required
+                            autocomplete="off"
+                        >
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn cancel-btn" id="cancelModalBtn">Отмена</button>
+                <button class="modal-btn create-btn" id="submitGroupBtn">Создать</button>
+            </div>
+        `);
+
+        // Даем время DOM обновиться и устанавливаем обработчики
+        setTimeout(setupDynamicEventListeners, 0);
+    });
 
     overlay.addEventListener('click', function(e) {
         if (modal.classList.contains('active')) {
@@ -104,24 +177,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    groupTitleInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            handleCreateGroup();
-        }
-    });
-
-    submitBtn.addEventListener('click', handleCreateGroup);
-
     modal.addEventListener('click', (e) => {
         e.stopPropagation();
-    });
-
-    groupTitleInput.addEventListener('input', () => {
-        const errorMsg = document.querySelector('.error-message');
-        if (errorMsg) {
-            errorMsg.remove();
-        }
     });
 });
 

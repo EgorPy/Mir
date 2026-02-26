@@ -75,6 +75,21 @@ async def create_chat(
     return {"ok": True, "id": result[0].get("id", None), "result": result[0]}
 
 
+@router.get("/{chat_id}/info")
+async def chat_info(
+        chat_id: str,
+        user_id: str = Depends(check_user_session),
+        connection_manager: ConnectionManager = Depends(cm.dependency)
+):
+    db = AutoDB(connection_manager)
+
+    author = "author"
+    members = []
+    result = await db.execute_async("SELECT title FROM chats WHERE id = ?", (chat_id,))
+#
+    return {"ok": True, "title": result[0].get("title", None), "author": author, "members": members}
+
+
 @router.post("/delete")
 async def delete_chat(
         data: ChatDelete,
@@ -102,6 +117,7 @@ class MessageCreate(BaseModel):
 @router.get("/{chat_id}/messages")
 async def get_messages(
         chat_id: str,
+        user_id: str = Depends(check_user_session),
         connection_manager: ConnectionManager = Depends(cm.dependency)
 ):
     db = AutoDB(connection_manager)

@@ -17,7 +17,10 @@ export async function loadMessages(chatId) {
 
     try {
         const baseUrl = window.BACKEND_URL || '';
-        const response = await fetch(`${baseUrl}/chats/${chatId}/messages`);
+        const response = await fetch(`${baseUrl}/chats/${chatId}/messages`, {
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+        });
 
         if (!response.ok) throw new Error(`HTTP error ${response.status}`);
 
