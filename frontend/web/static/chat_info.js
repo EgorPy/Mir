@@ -53,7 +53,7 @@ function createChatInfoHTML(chat) {
 
     return `
         <div class="modal-header">
-            <h2>Информация о чате</h2>
+            Информация о чате
         </div>
         <div class="modal-body">
                 <div class="chat-info-header">
@@ -68,23 +68,6 @@ function createChatInfoHTML(chat) {
                 </div>
 
                 <div class="chat-info-details">
-                    <div class="info-row">
-                        <span class="info-label">Тип:</span>
-                        <span class="info-value">${chatTypeText}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Тип:</span>
-                        <span class="info-value">${chatTypeText}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Тип:</span>
-                        <span class="info-value">${chatTypeText}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Тип:</span>
-                        <span class="info-value">${chatTypeText}</span>
-                    </div>
-
                     ${chat.description ? `
                     <div class="info-row description">
                         <span class="info-label">Описание:</span>
@@ -95,21 +78,20 @@ function createChatInfoHTML(chat) {
                     ${chat.members ? `
                     <div class="info-row">
                         <span class="info-label">Участники:</span>
-                        <span class="info-value">${chat.members}</span>
+                        <span class="info-value">${chat.members.length}</span>
                     </div>
                     ` : ''}
                 </div>
 
-                ${chat.members_list ? `
+                ${chat.members ? `
                 <div class="chat-info-members">
-                    <h4>Участники (${chat.members_list.length})</h4>
                     <div class="members-list">
-                        ${chat.members_list.map(member => `
+                        ${chat.members.map(member => `
                             <div class="member-item">
                                 <img src="${member.avatar || defaultAvatar}"
                                      alt="avatar"
                                      class="member-avatar">
-                                <span class="member-name">${member.name}</span>
+                                <div class="member-name">${member.first_name} ${member.last_name}</div>
                                 ${member.role ? `<span class="member-role">${member.role}</span>` : ''}
                             </div>
                         `).join('')}

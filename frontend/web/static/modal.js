@@ -1,8 +1,7 @@
 export function openModal(contentHtml) {
-    const modal = document.getElementById('createGroupModal');
+    const modal = document.getElementById('modal');
     const overlay = document.getElementById('overlay');
 
-    // Находим modal-content и заменяем его полностью
     const modalContent = modal.querySelector('.modal-content');
     if (modalContent) {
         modalContent.innerHTML = contentHtml;
@@ -23,7 +22,7 @@ export function openModal(contentHtml) {
 }
 
 export function closeModal() {
-    const modal = document.getElementById('createGroupModal');
+    const modal = document.getElementById('modal');
     const overlay = document.getElementById('overlay');
     const form = document.getElementById('createGroupForm');
 

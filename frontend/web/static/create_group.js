@@ -2,7 +2,7 @@ import { openModal, closeModal } from '/static/modal.js';
 
 document.addEventListener('DOMContentLoaded', function() {
     const createGroupBtn = document.getElementById('createGroupBtn');
-    const modal = document.getElementById('createGroupModal');
+    const modal = document.getElementById('modal');
     const overlay = document.getElementById('overlay');
 
     if (!createGroupBtn || !modal || !overlay) {
@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', function() {
     createGroupBtn.addEventListener('click', () => {
         openModal(`
             <div class="modal-header">
-                <h2>Создать группу</h2>
+                Создать группу
             </div>
             <div class="modal-body">
                 <form id="createGroupForm">
@@ -159,7 +159,6 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `);
 
-        // Даем время DOM обновиться и устанавливаем обработчики
         setTimeout(setupDynamicEventListeners, 0);
     });
 

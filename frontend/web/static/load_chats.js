@@ -57,8 +57,6 @@ async function loadChats() {
             if (lastMessage) lastMessage.textContent = '';
 
             chatElement.addEventListener('click', async () => {
-                console.log(getChatStates())
-
                 let chatObject;
                 chatObject = getChatState(chatId)
                 if (chatObject === undefined) {
@@ -66,10 +64,9 @@ async function loadChats() {
                     setChatState(chatId, {
                         "id": chatObject.id,
                         "title": chatObject.title,
-                        "participants": chatObject.participants
+                        "members": chatObject.members
                     })
                 }
-                console.log(chatObject)
                 openChat(chatObject);
                 document.querySelectorAll('.chat-main.selected')
                     .forEach(el => el.classList.remove('selected'));

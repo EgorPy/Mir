@@ -166,6 +166,7 @@
     color: white;
     justify-content: center;
     align-items: center;
+    flex-direction: column;
     background-color: #0f0a14;
     border-radius: 12px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
@@ -182,7 +183,41 @@
     flex-direction: column;
     align-items: center;
     font-size: 2rem;
+    padding-top: 1rem;
     justify-content: center;
+}
+
+.modal .chat-info-members .member-item {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0.5rem;
+}
+
+.modal .chat-info-members .members-list {
+    overflow-y: scroll;
+    max-height: 30vh;
+}
+
+.modal .chat-info-members .members-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal .chat-info-members .members-list::-webkit-scrollbar-track {
+    background: #1a1a1a;
+}
+
+.modal .chat-info-members .members-list::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 4px;
+}
+
+.modal .chat-info-members .members-list::-webkit-scrollbar-button {
+    display: none;
+}
+
+.modal .chat-info-members .member-item .member-name {
+    margin-left: 1rem;
 }
 
 .modal .chat-info-header .title {
@@ -223,13 +258,8 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-}
-
-.modal-header h2 {
-    margin: 0;
     font-size: 1.5rem;
+    padding: 1rem;
 }
 
 .modal-close {

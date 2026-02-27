@@ -628,8 +628,7 @@ class AutoDB:
         if not cursor.fetchone():
             cursor.execute(f"""
                 CREATE TABLE {table_name} (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    id INTEGER PRIMARY KEY AUTOINCREMENT
                 )
             """)
             conn.commit()
@@ -666,8 +665,7 @@ class AutoDB:
             if not cursor.fetchone():
                 cursor.execute(f"""
                     CREATE TABLE {table} (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        id INTEGER PRIMARY KEY AUTOINCREMENT
                     )
                 """)
 

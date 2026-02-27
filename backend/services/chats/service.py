@@ -31,6 +31,15 @@ class ChatDelete(BaseModel):
     chat_id: str
 
 
+async def add_chat_member(chat_id: str, user_id: str, connection_manager: ConnectionManager = Depends(cm.dependency)):
+    db = AutoDB(connection_manager)
+
+    await db.insert_chat_member(
+        chat_id=chat_id,
+        user_id=user_id
+    )
+
+
 @router.get("/list")
 async def list_chats(
         user_id: str = Depends(check_user_session),
@@ -72,6 +81,8 @@ async def create_chat(
     if not result:
         return {"ok": False}
 
+    await add_chat_member(result[0].get("id", None), user_id, connection_manager)
+
     return {"ok": True, "id": result[0].get("id", None), "result": result[0]}
 
 
@@ -83,7 +94,9 @@ async def chat_info(
 ):
     db = AutoDB(connection_manager)
 
-    members = await db.execute_async("SELECT first_name, last_name FROM chat_members WHERE chat_id = ?", (chat_id,))
+    members = await db.execute_async(
+        "SELECT u.id, u.first_name, u.last_name FROM users u INNER JOIN chat_members cm ON u.id = cm.user_id WHERE cm.chat_id = ?",
+        (chat_id,))
     result = await db.execute_async("SELECT id, title, owner_id FROM chats WHERE id = ?", (chat_id,))
 
     if not result:
@@ -111,9 +124,22 @@ async def delete_chat(
     if not is_owner:
         return status.HTTP_403_FORBIDDEN
 
+    # delete chat
     result = await db.delete_chat(
         id=str(data.chat_id)
     )
+
+    # delete chat members
+    await db.delete_chat_member(
+        chat_id=str(data.chat_id)
+    )
+
+    # delete chat messages
+    await db.delete_message(
+        chat_id=str(data.chat_id)
+    )
+
+    # you need to delete rows from every table connected to chats table # maybe need to come up with a solution for this one
 
     return {"ok": bool(result)}
 
