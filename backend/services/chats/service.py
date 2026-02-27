@@ -83,11 +83,19 @@ async def chat_info(
 ):
     db = AutoDB(connection_manager)
 
-    author = "author"
-    members = []
-    result = await db.execute_async("SELECT title FROM chats WHERE id = ?", (chat_id,))
-#
-    return {"ok": True, "title": result[0].get("title", None), "author": author, "members": members}
+    members = await db.execute_async("SELECT first_name, last_name FROM chat_members WHERE chat_id = ?", (chat_id,))
+    result = await db.execute_async("SELECT id, title, owner_id FROM chats WHERE id = ?", (chat_id,))
+
+    if not result:
+        return {"ok": False}
+
+    return {
+        "ok": True,
+        "id": result[0].get("id", None),
+        "title": result[0].get("title", None),
+        "author": result[0].get("owner_id", None),
+        "members": members
+    }
 
 
 @router.post("/delete")

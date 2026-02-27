@@ -1,5 +1,6 @@
 import { BACKEND_URL } from '/static/config.js';
 import { openModal, closeModal } from '/static/modal.js';
+import { getChatState } from '/static/chat_state.js'
 
 document.addEventListener('click', async (e) => {
     if (e.target.closest('.chat-avatar') || e.target.closest('.chat-title')) {
@@ -16,39 +17,10 @@ document.addEventListener('click', async (e) => {
 });
 
 async function showChatInfo(chatId) {
-    try {
-        const response = await fetch(`${BACKEND_URL}/chats/${chatId}/info`, {
-            credentials: "include"
-        });
-
-        if (!response.ok) {
-            throw new Error(`Error loading chat info: ${response.status}`);
-        }
-
-        const chatInfo = await response.json();
-
-        const modalContent = createChatInfoHTML(chatInfo);
-
-        openModal(modalContent);
-
-        setTimeout(setupModalEventListeners, 0);
-
-    } catch (error) {
-        console.error('Ошибка при получении информации о чате:', error);
-        openModal(`
-            <div class="modal-header">
-                <h2>Ошибка</h2>
-            </div>
-            <div class="modal-body">
-                <div class="error-message">Не удалось загрузить информацию о чате</div>
-            </div>
-            <div class="modal-footer">
-                <button class="modal-btn cancel-btn" id="cancelModalBtn">Ок</button>
-            </div>
-        `);
-
-        setTimeout(setupModalEventListeners, 0);
-    }
+    const chat = getChatState(chatId)
+    const modalContent = createChatInfoHTML(chat);
+    openModal(modalContent);
+    setTimeout(setupModalEventListeners, 0);
 }
 
 function setupModalEventListeners() {
@@ -65,15 +37,15 @@ function setupModalEventListeners() {
     }
 }
 
-function createChatInfoHTML(chatInfo) {
-    const createdAt = chatInfo.created_at ? new Date(chatInfo.created_at).toLocaleString() : 'Неизвестно';
+function createChatInfoHTML(chat) {
+    const createdAt = chat.created_at ? new Date(chat.created_at).toLocaleString() : 'Неизвестно';
 
     let chatTypeText = 'Чат';
-    if (chatInfo.type === 'group') {
+    if (chat.type === 'group') {
         chatTypeText = 'Группа';
-    } else if (chatInfo.type === 'channel') {
+    } else if (chat.type === 'channel') {
         chatTypeText = 'Канал';
-    } else if (chatInfo.type === 'private') {
+    } else if (chat.type === 'private') {
         chatTypeText = 'Личный чат';
     }
 
@@ -84,12 +56,15 @@ function createChatInfoHTML(chatInfo) {
             <h2>Информация о чате</h2>
         </div>
         <div class="modal-body">
-            <div class="chat-info-modal">
                 <div class="chat-info-header">
-                    <img src="${chatInfo.avatar || defaultAvatar}"
+                    <img src="${chat.avatar || defaultAvatar}"
                          alt="avatar"
                          class="chat-info-avatar">
-                    <h3>${chatInfo.title || 'Без названия'}</h3>
+                    <div class="title">${chat.title || 'Без названия'}</div>
+                </div>
+
+                <div class="chat-info-buttons">
+                    <button class="modal-btn delete-chat-btn" id="deleteChatBtn">Удалить</button>
                 </div>
 
                 <div class="chat-info-details">
@@ -97,39 +72,39 @@ function createChatInfoHTML(chatInfo) {
                         <span class="info-label">Тип:</span>
                         <span class="info-value">${chatTypeText}</span>
                     </div>
-
                     <div class="info-row">
-                        <span class="info-label">Создан:</span>
-                        <span class="info-value">${createdAt}</span>
+                        <span class="info-label">Тип:</span>
+                        <span class="info-value">${chatTypeText}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Тип:</span>
+                        <span class="info-value">${chatTypeText}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Тип:</span>
+                        <span class="info-value">${chatTypeText}</span>
                     </div>
 
-                    ${chatInfo.description ? `
+                    ${chat.description ? `
                     <div class="info-row description">
                         <span class="info-label">Описание:</span>
-                        <p class="info-value">${chatInfo.description}</p>
+                        <p class="info-value">${chat.description}</p>
                     </div>
                     ` : ''}
 
-                    ${chatInfo.members ? `
+                    ${chat.members ? `
                     <div class="info-row">
                         <span class="info-label">Участники:</span>
-                        <span class="info-value">${chatInfo.members}</span>
-                    </div>
-                    ` : ''}
-
-                    ${chatInfo.created_by ? `
-                    <div class="info-row">
-                        <span class="info-label">Создатель:</span>
-                        <span class="info-value">${chatInfo.author}</span>
+                        <span class="info-value">${chat.members}</span>
                     </div>
                     ` : ''}
                 </div>
 
-                ${chatInfo.members_list ? `
+                ${chat.members_list ? `
                 <div class="chat-info-members">
-                    <h4>Участники (${chatInfo.members_list.length})</h4>
+                    <h4>Участники (${chat.members_list.length})</h4>
                     <div class="members-list">
-                        ${chatInfo.members_list.map(member => `
+                        ${chat.members_list.map(member => `
                             <div class="member-item">
                                 <img src="${member.avatar || defaultAvatar}"
                                      alt="avatar"
@@ -141,7 +116,6 @@ function createChatInfoHTML(chatInfo) {
                     </div>
                 </div>
                 ` : ''}
-            </div>
         </div>
         <div class="modal-footer">
             <button class="modal-btn cancel-btn" id="cancelModalBtn">Ок</button>

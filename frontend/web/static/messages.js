@@ -10,20 +10,20 @@ const messageInput = messageInputWrapper.querySelector('.message-input');
 const sendBtn = messageInputWrapper.querySelector('.send-message-btn');
 const messagesContainer = actualChat.querySelector('.messages-container');
 
-export function openChat(chatId, title) {
+export function openChat(chat) {
     chatHeader.style.display = 'flex';
     messageInputWrapper.style.display = 'flex';
-    chatTitleEl.textContent = title;
+    chatTitleEl.textContent = chat.title;
 
     const selectChat = actualChat.querySelector('.select-chat');
     if (selectChat) selectChat.style.display = 'none';
 
-    chatHeader.setAttribute('data-chat-id', chatId);
+    chatHeader.setAttribute('data-chat-id', chat.id);
 
     messagesContainer.innerHTML = '';
-    actualChat.dataset.chatId = chatId;
+    actualChat.dataset.chatId = chat.id;
 
-    loadMessages(chatId);
+    loadMessages(chat.id);
     adjustChatHeader();
 }
 

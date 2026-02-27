@@ -2,6 +2,7 @@ import chatTemplateHtml from '/pages/widgets/chat.js';
 import { setupMessageInput } from '/static/chat_dialog.js';
 import { BACKEND_URL } from '/static/config.js';
 import { openChat } from './messages.js';
+import { getChatState, setChatState, getChatStates } from './chat_state.js'
 
 const tempDiv = document.createElement('div');
 tempDiv.innerHTML = chatTemplateHtml;
@@ -45,7 +46,8 @@ async function loadChats() {
             if (!chatTemplate) return;
 
             const chatElement = chatTemplate.cloneNode(true);
-            chatElement.setAttribute('data-chat-id', chat.id);
+            const chatId = chat.id
+            chatElement.setAttribute('data-chat-id', chatId);
             chatElement.setAttribute('data-chat-title', chat.title);
 
             const nameElement = chatElement.querySelector('.chat-name');
@@ -54,8 +56,21 @@ async function loadChats() {
             if (nameElement) nameElement.textContent = chat.title;
             if (lastMessage) lastMessage.textContent = '';
 
-            chatElement.addEventListener('click', () => {
-                openChat(chat.id, chat.title);
+            chatElement.addEventListener('click', async () => {
+                console.log(getChatStates())
+
+                let chatObject;
+                chatObject = getChatState(chatId)
+                if (chatObject === undefined) {
+                    chatObject = await fetchChatData(chatId)
+                    setChatState(chatId, {
+                        "id": chatObject.id,
+                        "title": chatObject.title,
+                        "participants": chatObject.participants
+                    })
+                }
+                console.log(chatObject)
+                openChat(chatObject);
                 document.querySelectorAll('.chat-main.selected')
                     .forEach(el => el.classList.remove('selected'));
                 chatElement.classList.add('selected');
@@ -74,6 +89,15 @@ async function loadChats() {
             loadingMsg.textContent = 'Ошибка загрузки чатов';
         }
     }
+}
+
+async function fetchChatData(chatId) {
+    const response = await fetch(`${BACKEND_URL}/chats/${chatId}/info`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {'Content-Type': 'application/json'}
+    })
+    return response.json()
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
