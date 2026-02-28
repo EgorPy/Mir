@@ -50,3 +50,4 @@ build/
 pip-wheel-metadata/
 *.ini
 config.js
+config_server.js
