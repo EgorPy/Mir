@@ -79,8 +79,18 @@
 }
 
 /* Resizer */
-.chats, .actual-chat {
+.chats, .actual-chat, #searchChatsList {
     overflow: auto;
+}
+
+#searchChatsList {
+    display: none;
+    flex: 0 0 auto;
+    width: 45%;
+    min-width: 30%;
+    max-width: 70%;
+    overflow-y: auto;
+    height: 100%;
 }
 
 .chats {
@@ -148,6 +158,8 @@
     box-sizing: border-box;
 }
 
+#searchChatsSearching,
+#searchChatsNotFound,
 .chats-loading,
 .select-chat,
 .no-chats-yet {
@@ -260,7 +272,7 @@
         overflow: hidden;
     }
 
-    .chats {
+    .chats, #searchChatsList {
         width: 100% !important;
         min-width: 100% !important;
         max-width: 100% !important;

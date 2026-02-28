@@ -189,7 +189,7 @@ async function createChat(title) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ title })
+            body: JSON.stringify({ title: title, public_id: "asd" })
         });
 
         const result = await response.json();

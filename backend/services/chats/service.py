@@ -25,10 +25,15 @@ SERVICE = Service(
 
 class ChatCreate(BaseModel):
     title: str
+    public_id: str
 
 
 class ChatDelete(BaseModel):
     chat_id: str
+
+
+class SearchData(BaseModel):
+    public_id: str  # it can be public_id of public chat (channel or group) or email of a user
 
 
 async def add_chat_member(chat_id: str, user_id: str, connection_manager: ConnectionManager = Depends(cm.dependency)):
@@ -64,6 +69,31 @@ async def list_chats(
     return chats_dict
 
 
+@router.get("/search/{public_id}")
+async def search_chats(
+        public_id: str,
+        user_id: str = Depends(check_user_session),
+        connection_manager: ConnectionManager = Depends(cm.dependency)
+):
+    db = AutoDB(connection_manager)
+
+    result = await db.get_chats(
+        title=str(public_id)
+    )
+
+    if result:
+        return {"ok": True, "chats": result}
+
+    result = await db.execute_async(
+        "SELECT id, first_name, last_name, email FROM users WHERE email = ?", (str(public_id),)
+    )
+
+    if not result:
+        return {"ok": True, "chats": []}
+
+    return {"ok": True, "chats": [result[0]]}
+
+
 @router.post("/create")
 async def create_chat(
         data: ChatCreate,
@@ -74,7 +104,8 @@ async def create_chat(
 
     result = await db.insert_chat(
         owner_id=str(user_id),
-        title=str(data.title)
+        title=str(data.title),
+        public_id=str(data.public_id)
     )
 
     if not result:
@@ -93,9 +124,8 @@ async def chat_info(
 ):
     db = AutoDB(connection_manager)
 
-    members = await db.execute_async(
-        "SELECT u.id, u.first_name, u.last_name FROM users u INNER JOIN chat_members cm ON u.id = cm.user_id WHERE cm.chat_id = ?",
-        (chat_id,))
+    members = await db.execute_async("""SELECT u.id, u.first_name, u.last_name FROM users u 
+INNER JOIN chat_members cm ON u.id = cm.user_id WHERE cm.chat_id = ?""", (chat_id,))
     result = await db.execute_async("SELECT id, title, owner_id FROM chats WHERE id = ?", (chat_id,))
 
     if not result:

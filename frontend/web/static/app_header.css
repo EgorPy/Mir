@@ -26,6 +26,16 @@
     justify-content: center;
 }
 
+.app-header .menu-name input {
+    background: #1e1428;
+    border: none;
+    border-radius: 1rem;
+    padding: 1rem;
+    margin: 1rem;
+    font-size: 1rem;
+    color: white;
+}
+
 .burger {
     background: none;
     width: 5rem;
@@ -146,10 +156,36 @@
     padding: 2rem;
 }
 
+.app-header .lens {
+    margin: 1rem 1rem;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    width: 4rem;
+    height: auto;
+    transition: 0.2s;
+}
+
 @media (max-width: 768px) {
     .sidebar {
         width: 250px;
         left: -250px;
+    }
+
+    .app-header .menu-name input {
+        display: none;
+    }
+
+    .app-header .profile-name {
+        display: none;
+    }
+
+    .app-header .lens {
+        display: flex;
+    }
+
+    .app-header .lens:hover {
+        background: #2f2438;
     }
 }
 

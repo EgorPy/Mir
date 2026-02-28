@@ -23,7 +23,7 @@ async function checkAuth() {
         }
 
         const data = await response.json();
-        console.log('User is logged in', data);
+        console.log('User is logged in');
         return true;
     } catch (error) {
         console.error('Error checking authentication:', error);

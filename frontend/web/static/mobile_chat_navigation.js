@@ -1,7 +1,7 @@
 (function() {
     const actualChat = document.querySelector('.actual-chat');
     const closeBtn = document.querySelector('.close-chat-btn');
-    const chatsContainer = document.querySelector('.chats');
+    const chatsContainer = document.querySelector('#chats');
 
     function isMobile() {
         return window.innerWidth <= 768;

@@ -9,7 +9,7 @@ from core.logger import logger
 
 from backend.services.auth.api.auth import router as auth_router
 from backend.services.chats.service import router as chats_router
-from backend.phone_mode import DEBUG_PHONE_MODE
+from backend.phone_mode import DEBUG_PHONE_MODE, SERVER_MODE
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
@@ -47,7 +47,9 @@ def start_server():
     """ Starts the server """
 
     logger.info(f"BACKEND server started at http://{config.DOMAIN}:{config.BACKEND_PORT}")
-    if DEBUG_PHONE_MODE == False:
+    if SERVER_MODE == True:
+        uvicorn.run("backend_main:app", host=config.DOMAIN, port=int(config.BACKEND_PORT), reload=True)
+    elif DEBUG_PHONE_MODE == False:
         uvicorn.run("backend_main:app", host=config.DOMAIN, port=int(config.BACKEND_PORT), reload=True,
                     ssl_certfile="192.168.1.140+1.pem", ssl_keyfile="192.168.1.140+1-key.pem")
     else:
