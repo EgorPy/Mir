@@ -149,8 +149,8 @@ def run():
     server_thread.start()
 
     url = f"http://{config.DOMAIN}:{config.FRONTEND_PORT}"
-    logger.info(f"Opening browser: {url}")
-    webbrowser.open(url)
+    # logger.info(f"Opening browser: {url}")
+    # webbrowser.open(url)
 
     server_thread.join()
 

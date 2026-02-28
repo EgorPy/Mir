@@ -1,12 +1,15 @@
 """ Backend API """
-import sys, os;
+
+import sys, os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from core.config import config
 from core.logger import logger
 
 from backend.services.auth.api.auth import router as auth_router
 from backend.services.chats.service import router as chats_router
+from backend.phone_mode import DEBUG_PHONE_MODE
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
@@ -20,7 +23,11 @@ app = FastAPI()
 
 origins = [
     "http://localhost:3000",
+    "http://127.0.0.1:3000",
     "http://192.168.1.140:3000",
+    "https://localhost:3000",
+    "https://127.0.0.1:3000",
+    "https://192.168.1.140:3000",
 ]
 
 app.add_middleware(
@@ -40,8 +47,11 @@ def start_server():
     """ Starts the server """
 
     logger.info(f"BACKEND server started at http://{config.DOMAIN}:{config.BACKEND_PORT}")
-    uvicorn.run("backend_main:app", host=config.DOMAIN, port=int(config.BACKEND_PORT), reload=True,
-                )
+    if DEBUG_PHONE_MODE == False:
+        uvicorn.run("backend_main:app", host=config.DOMAIN, port=int(config.BACKEND_PORT), reload=True,
+                    ssl_certfile="192.168.1.140+1.pem", ssl_keyfile="192.168.1.140+1-key.pem")
+    else:
+        uvicorn.run("backend_main:app", host=config.DOMAIN, port=int(config.BACKEND_PORT), reload=True)
 
 
 def run():

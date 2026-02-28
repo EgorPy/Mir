@@ -12,21 +12,19 @@ async function checkAuth() {
             }
         });
 
-        if (response.status === 401) {
-            console.log('User is not logged in');
-            window.location.href = '/login';
+        if (!response.ok) {
+            if (response.status === 401) {
+                console.log('User is not logged in');
+                window.location.href = '/login';
+            } else {
+                console.error('Auth check failed:', response.status);
+            }
             return false;
         }
 
-        if (response.ok) {
-            const data = await response.json();
-            console.log('User is logged in');
-            return true;
-        }
-
-        console.error('Auth check failed:', response.status);
-        window.location.href = '/login';
-        return false;
+        const data = await response.json();
+        console.log('User is logged in', data);
+        return true;
     } catch (error) {
         console.error('Error checking authentication:', error);
         console.log('Auth check failed, user is not logged in');
@@ -78,7 +76,7 @@ async function getCurrentUser() {
 
 async function logout() {
     try {
-        const url = `${BACKEND_URL}/logout/`;
+        const url = `${BACKEND_URL}/auth/logout/`;
 
         const response = await fetch(url, {
             method: 'GET',
@@ -91,7 +89,7 @@ async function logout() {
         if (response.ok) {
             window.location.href = '/login';
         } else {
-            console.error('Logout failed');
+            console.error('Logout failed:', response.status);
         }
     } catch (error) {
         console.error('Error during logout:', error);

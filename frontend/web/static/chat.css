@@ -192,26 +192,32 @@
     padding: 0.5rem 1rem;
     border-top: 1px solid #333;
     flex: 0 0 auto;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .chat-input input {
-    font-size: 1.5rem;
-    flex: 1;
+    flex: 1 1 auto;
+    min-width: 0;
     padding: 0.5rem;
     border-radius: 0.3rem;
     border: 1px solid #555;
     background: #1c1724;
     color: #fff;
+    font-size: 1.5rem;
+    box-sizing: border-box;
 }
 
 .chat-input button {
-    font-size: 1rem;
+    flex: 0 0 auto;
     padding: 0.5rem 1rem;
     border: none;
     border-radius: 0.3rem;
     background: #5a3fff;
     color: #fff;
     cursor: pointer;
+    font-size: 1rem;
+    box-sizing: border-box;
 }
 
 .messages-container {
@@ -286,5 +292,13 @@
 
     .actual-chat.active .chat-header {
         display: flex;
+    }
+
+    .messages-container {
+        padding: 1rem;
+        padding-top: calc(1rem + 5.7rem);
+        padding-bottom: calc(1rem);
+        overflow-y: auto;
+        flex: 1 1 auto;
     }
 }

@@ -1,0 +1,1 @@
+DEBUG_PHONE_MODE = True

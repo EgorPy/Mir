@@ -8,6 +8,7 @@ from typing import Optional
 import sqlite3
 
 from backend.services.auth.logic.auth_logic import AuthLogic
+from backend.phone_mode import DEBUG_PHONE_MODE
 
 from core.method_generator import AutoDB, ConnectionManager
 from core.redirects import redirect_on_success
@@ -34,15 +35,26 @@ async def login(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     response = JSONResponse(content={"message": "Login successful"})
-    response.set_cookie(
-        key="session_id",
-        value=session_id,
-        httponly=True,
-        secure=False,  # TODO: set True in production (only HTTPS)
-        samesite="strict",
-        max_age=config.SESSION_DURATION,
-        path="/"
-    )
+    if DEBUG_PHONE_MODE == False:
+        response.set_cookie(
+            key="session_id",
+            value=session_id,
+            httponly=True,
+            secure=True,  # TODO: set True in production (only HTTPS)
+            samesite="none",
+            max_age=config.SESSION_DURATION,
+            path="/"
+        )
+    else:
+        response.set_cookie(
+            key="session_id",
+            value=session_id,
+            httponly=True,
+            secure=False,  # TODO: set True in production (only HTTPS)
+            samesite="strict",
+            max_age=config.SESSION_DURATION,
+            path="/"
+        )
     return response
 
 
