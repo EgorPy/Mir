@@ -10,6 +10,6 @@ fetch(`${BACKEND_URL}/auth/me`, {
         document.querySelector("#login_button").onclick = () => window.location.href = "/profile"
     } else {
         document.querySelector("#login_button").innerText = "Войти"
-        document.querySelector("#login_button").onclick = () => window.location.href = "/login"
+//        document.querySelector("#login_button").onclick = () => window.location.href = "/login"
     }
 })

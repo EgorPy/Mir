@@ -4,7 +4,7 @@ Linux: uses nohup to run processes in background (.out logs)
 Windows: opens separate console windows, no log files
 """
 
-from logger import logger
+from core.logger import logger
 
 import subprocess
 import platform

@@ -1,5 +1,7 @@
 """ Backend API """
+import sys, os;
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.config import config
 from core.logger import logger
 
@@ -16,23 +18,30 @@ import sys
 
 app = FastAPI()
 
-app.include_router(auth_router, prefix="/auth", tags=["Auth"])
-app.include_router(chats_router, prefix="/chats", tags=["Chats"])
+origins = [
+    "http://localhost:3000",
+    "http://192.168.1.140:3000",
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[f"http://{config.DOMAIN}:{config.FRONTEND_PORT}"],  # f"http://{config.DOMAIN}:{config.FRONTEND_PORT}"
+    allow_origins=origins,
+    # [f"http://{config.DOMAIN}:{config.FRONTEND_PORT}"],  # f"http://{config.DOMAIN}:{config.FRONTEND_PORT}"
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(auth_router, prefix="/auth", tags=["Auth"])
+app.include_router(chats_router, prefix="/chats", tags=["Chats"])
 
 
 def start_server():
     """ Starts the server """
 
     logger.info(f"BACKEND server started at http://{config.DOMAIN}:{config.BACKEND_PORT}")
-    uvicorn.run("backend_main:app", host=config.DOMAIN, port=int(config.BACKEND_PORT), reload=True)
+    uvicorn.run("backend_main:app", host=config.DOMAIN, port=int(config.BACKEND_PORT), reload=True,
+                )
 
 
 def run():

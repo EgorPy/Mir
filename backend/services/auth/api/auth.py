@@ -63,7 +63,6 @@ async def register(
         # phone.strip(),
         email.strip(),
         password.strip(),
-        connection
     )
     if not session_id:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT)
@@ -90,7 +89,6 @@ async def check_user_session(session_id: Optional[str] = Cookie(None),
     if not session_id:
         logger.info("No session provided")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No session provided")
-
 
     result = await db.execute_async(
         "SELECT user_id FROM sessions WHERE id = ? AND expires_at > ?",

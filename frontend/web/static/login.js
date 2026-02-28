@@ -9,11 +9,11 @@ document.querySelector(".login-form").addEventListener("submit", async function(
 
     const response = await fetch(`${BACKEND_URL}/auth/login/`, {
         method: "POST",
+        credentials: "include",
         headers: {
             "Accept": "application/json",
             "Content-Type": "application/x-www-form-urlencoded"
         },
-        credentials: "include",
         body: new URLSearchParams({
             email,
             password

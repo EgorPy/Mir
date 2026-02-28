@@ -244,3 +244,47 @@
 .chat-header .chat-title {
     cursor: pointer;
 }
+
+@media (max-width: 768px) {
+
+    .chat-section {
+        min-width: 0;
+        width: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .chats {
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        flex: 0 0 100%;
+    }
+
+    .actual-chat {
+        position: fixed;
+        top: 0;
+        left: 100%;
+        width: 100%;
+        height: 100%;
+        z-index: 2000;
+        background: #0f0a14;
+        transition: left 0.25s ease;
+    }
+
+    .actual-chat.active {
+        left: 0;
+    }
+
+    .resizer {
+        display: none;
+    }
+
+    .chat-header {
+        display: none;
+    }
+
+    .actual-chat.active .chat-header {
+        display: flex;
+    }
+}

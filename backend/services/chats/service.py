@@ -50,8 +50,7 @@ async def list_chats(
     db = AutoDB(connection_manager)
 
     result = await db.execute_async(
-        "SELECT * FROM chats WHERE owner_id = ?",
-        (user_id,)
+        "SELECT * FROM chats"
     )
 
     chats_dict = {}
