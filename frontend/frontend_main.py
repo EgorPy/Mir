@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.config import config
 from core.logger import logger
 
-from fastapi.responses import HTMLResponse, PlainTextResponse, FileResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, Request
@@ -19,8 +19,6 @@ import jinja2
 
 import traceback
 import sys
-
-app = FastAPI()
 
 
 def scan_and_register_pages():
@@ -59,20 +57,18 @@ def scan_and_register_pages():
     return registered_pages
 
 
-@app.get("/static/fonts/{font_path:path}")
-async def serve_font_no_range(font_path: str):
-    BASE_DIR = Path(__file__).parent.parent
-    font_file = BASE_DIR / "frontend" / "web" / "static" / "fonts" / font_path
+app = FastAPI()
+pages_dir = Path("frontend/web/pages")
+templates = Jinja2Templates(directory=pages_dir)
+registered_pages = scan_and_register_pages()
 
-    return FileResponse(
-        path=font_file,
-        media_type="font/ttf",
-        headers={
-            "Accept-Ranges": "none",
-            "Content-Type": "font/ttf",
-            "Content-Length": str(font_file.stat().st_size),
-        }
-    )
+
+@app.get("/static/fonts/GreatVibes/GreatVibes-Regular.ttf")
+def font():
+    def iterfile():
+        with open("static/fonts/GreatVibes/GreatVibes-Regular.ttf", "rb") as f:
+            yield from f
+    return StreamingResponse(iterfile(), media_type="font/ttf")
 
 
 @app.exception_handler(404)
@@ -90,7 +86,7 @@ def start_server():
     """ Starts the server """
 
     logger.info(f"FRONTEND server started at http://{config.DOMAIN}:{config.FRONTEND_PORT}")
-    uvicorn.run(app, host=config.DOMAIN, port=int(config.FRONTEND_PORT), reload=False)
+    uvicorn.run("frontend_main:app", host=config.DOMAIN, port=int(config.FRONTEND_PORT), reload=False, loop="asyncio", http="h11")
 
 
 @app.get("/test-widgets-deep")
@@ -157,11 +153,8 @@ def run():
     mimetypes.add_type('font/ttf', '.ttf')
     app.mount("/static", StaticFiles(directory="frontend/web/static"), name="static")
     app.mount("/pages/widgets", StaticFiles(directory="frontend/web/pages/widgets"), name="pages_widgets")
-    pages_dir = Path("frontend/web/pages")
-    templates = Jinja2Templates(directory=pages_dir)
 
     # logger.info("Scanning for pages...")
-    registered_pages = scan_and_register_pages()
 
     if not registered_pages:
         logger.warning("No pages registered")
