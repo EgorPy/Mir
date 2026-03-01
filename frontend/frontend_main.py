@@ -1,5 +1,4 @@
 """ Execute this file to run frontend """
-
 import sys, os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -10,10 +9,11 @@ from core.logger import logger
 from fastapi.responses import HTMLResponse, PlainTextResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from pathlib import Path
 import webbrowser
 import threading
+import mimetypes
 import uvicorn
 import jinja2
 
@@ -62,13 +62,24 @@ pages_dir = Path("frontend/web/pages")
 templates = Jinja2Templates(directory=pages_dir)
 registered_pages = scan_and_register_pages()
 
+STATIC_DIR = Path("static")
 
-@app.get("/static/fonts/GreatVibes/GreatVibes-Regular.ttf")
-def font():
+
+@app.get("/static/{path:path}")
+def static_files(path: str):
+    file_path = STATIC_DIR / path
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+
     def iterfile():
-        with open("static/fonts/GreatVibes/GreatVibes-Regular.ttf", "rb") as f:
+        with open(file_path, "rb") as f:
             yield from f
-    return StreamingResponse(iterfile(), media_type="font/ttf")
+
+    mime_type, _ = mimetypes.guess_type(str(file_path))
+    if mime_type is None:
+        mime_type = "application/octet-stream"
+
+    return StreamingResponse(iterfile(), media_type=mime_type)
 
 
 @app.exception_handler(404)
