@@ -192,6 +192,7 @@
 .chat-header .close-chat-btn {
     background: none;
     border: none;
+    user-select: none;
     color: #fff;
     cursor: pointer;
 }

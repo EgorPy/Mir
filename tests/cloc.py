@@ -61,4 +61,4 @@ def count_lines_in_folder(
     return count
 
 
-print(count_lines_in_folder(r"c:/users/dmitry/Mir", recursive=True, extensions=[".py", ".js"]))
+print(count_lines_in_folder(r"c:/users/dmitry/Mir", recursive=True, extensions=[".py", ".js", ".css", ".html"]))
