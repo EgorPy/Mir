@@ -1,4 +1,5 @@
 """ Execute this file to run frontend """
+
 import sys, os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -6,19 +7,20 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.config import config
 from core.logger import logger
 
-from fastapi.responses import HTMLResponse, PlainTextResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request
 from pathlib import Path
 import webbrowser
 import threading
-import mimetypes
 import uvicorn
 import jinja2
 
 import traceback
 import sys
+
+app = FastAPI()
 
 
 def scan_and_register_pages():
@@ -57,31 +59,6 @@ def scan_and_register_pages():
     return registered_pages
 
 
-app = FastAPI()
-pages_dir = Path("frontend/web/pages")
-templates = Jinja2Templates(directory=pages_dir)
-registered_pages = scan_and_register_pages()
-
-STATIC_DIR = Path("static")
-
-
-@app.get("/static/{path:path}")
-def static_files(path: str):
-    file_path = STATIC_DIR / path
-    if not file_path.exists() or not file_path.is_file():
-        raise HTTPException(status_code=404, detail="File not found")
-
-    def iterfile():
-        with open(file_path, "rb") as f:
-            yield from f
-
-    mime_type, _ = mimetypes.guess_type(str(file_path))
-    if mime_type is None:
-        mime_type = "application/octet-stream"
-
-    return StreamingResponse(iterfile(), media_type=mime_type)
-
-
 @app.exception_handler(404)
 async def page_404(request, __):
     """ Pretty error 404 page """
@@ -97,7 +74,7 @@ def start_server():
     """ Starts the server """
 
     logger.info(f"FRONTEND server started at http://{config.DOMAIN}:{config.FRONTEND_PORT}")
-    uvicorn.run("frontend_main:app", host=config.DOMAIN, port=int(config.FRONTEND_PORT), reload=False, loop="asyncio", http="h11")
+    uvicorn.run(app, host=config.DOMAIN, port=int(config.FRONTEND_PORT), reload=False)
 
 
 @app.get("/test-widgets-deep")
@@ -159,13 +136,13 @@ def run():
 
     global app, pages_dir, templates
 
-    import mimetypes
-
-    mimetypes.add_type('font/ttf', '.ttf')
     app.mount("/static", StaticFiles(directory="frontend/web/static"), name="static")
     app.mount("/pages/widgets", StaticFiles(directory="frontend/web/pages/widgets"), name="pages_widgets")
+    pages_dir = Path("frontend/web/pages")
+    templates = Jinja2Templates(directory=pages_dir)
 
     # logger.info("Scanning for pages...")
+    registered_pages = scan_and_register_pages()
 
     if not registered_pages:
         logger.warning("No pages registered")
