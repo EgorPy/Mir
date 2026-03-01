@@ -136,6 +136,9 @@ def run():
 
     global app, pages_dir, templates
 
+    import mimetypes
+
+    mimetypes.add_type('font/ttf', '.ttf')
     app.mount("/static", StaticFiles(directory="frontend/web/static"), name="static")
     app.mount("/pages/widgets", StaticFiles(directory="frontend/web/pages/widgets"), name="pages_widgets")
     pages_dir = Path("frontend/web/pages")
