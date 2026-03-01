@@ -1,2 +1,2 @@
 DEBUG_PHONE_MODE = False
-SERVER_MODE = False
+SERVER_MODE = True

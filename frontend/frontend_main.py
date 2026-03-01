@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.config import config
 from core.logger import logger
 
-from fastapi.responses import HTMLResponse, PlainTextResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, Request
@@ -57,6 +57,22 @@ def scan_and_register_pages():
         logger.info(f"{route} -> {template}")
 
     return registered_pages
+
+
+@app.get("/static/fonts/{font_path:path}")
+async def serve_font_no_range(font_path: str):
+    BASE_DIR = Path(__file__).parent.parent
+    font_file = BASE_DIR / "frontend" / "web" / "static" / "fonts" / font_path
+
+    return FileResponse(
+        path=font_file,
+        media_type="font/ttf",
+        headers={
+            "Accept-Ranges": "none",
+            "Content-Type": "font/ttf",
+            "Content-Length": str(font_file.stat().st_size),
+        }
+    )
 
 
 @app.exception_handler(404)
