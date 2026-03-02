@@ -170,7 +170,7 @@
 }
 
 .chat-header {
-    height: 5.7rem;
+    height: 5rem;
     top: 0;
     left: 0;
     right: 0;
@@ -195,15 +195,16 @@
     user-select: none;
     color: #fff;
     cursor: pointer;
+    padding: 0 0.5rem;
 }
 
 .chat-input {
     position: sticky;
     bottom: 0;
     display: flex;
+    padding: 0.5rem;
+    padding-bottom: 1rem;
     gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    border-top: 1px solid #333;
     flex: 0 0 auto;
     width: 100%;
     box-sizing: border-box;
@@ -212,9 +213,9 @@
 .chat-input input {
     flex: 1 1 auto;
     min-width: 0;
-    padding: 0.5rem;
-    border-radius: 0.3rem;
-    border: 1px solid #555;
+    padding: 0.5rem 1rem;
+    border-radius: 2rem;
+    border: 1px solid #5a3fff;
     background: #1c1724;
     color: #fff;
     font-size: 1.5rem;
@@ -223,27 +224,33 @@
 
 .chat-input button {
     flex: 0 0 auto;
-    padding: 0.5rem 1rem;
+    width: 3rem;
+    height: 3rem;
     border: none;
-    border-radius: 0.3rem;
+    border-radius: 2rem;
     background: #5a3fff;
     color: #fff;
     cursor: pointer;
     font-size: 1rem;
     box-sizing: border-box;
+    transition: 0.2s;
+}
+
+.chat-input button:hover {
+    background: #50f;
 }
 
 .messages-container {
-    padding: 1rem;
+    padding: 0 1rem;
     overflow-y: auto;
-    max-height: calc(100% - 5.7rem - 1rem); /* header + input */
+    max-height: calc(100% - 4.7rem); /* header + input */
     flex: 1 1 auto;
 }
 
 .chat-header {
     position: fixed;
     top: 0;
-    height: 5.7rem;
+    height: 5rem;
     background-color: #130f17;
     display: none;
     z-index: 10000;
@@ -265,7 +272,6 @@
 }
 
 @media (max-width: 768px) {
-
     .chat-section {
         min-width: 0;
         width: 100%;
@@ -309,8 +315,9 @@
 
     .messages-container {
         padding: 1rem;
-        padding-top: calc(1rem + 5.7rem);
-        padding-bottom: calc(1rem);
+        padding-top: 0;
+        padding-bottom: 0;
+        margin-top: calc(5rem);
         overflow-y: auto;
         flex: 1 1 auto;
     }

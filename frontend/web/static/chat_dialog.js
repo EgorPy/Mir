@@ -88,8 +88,8 @@ export function setupMessageInput() {
     button.addEventListener('click', async () => {
         const text = input.value.trim();
         if (!text) return;
-        await sendMessage(text);
         input.value = '';
+        await sendMessage(text);
         const messagesContainer = document.querySelector('.messages-container');
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     });
