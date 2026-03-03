@@ -7,7 +7,7 @@ html, body {
 body {
     display: flex;
     flex-direction: column;
-    background: #130f17;
+    background: #09070b;
     color: white;
     font-family: sans-serif;
 }
@@ -38,7 +38,7 @@ font-display: swap;
 
 
 * {
-    font-family: native sans-serif;
+    font-family: math, sans-serif;
 }
 
 a {
@@ -60,7 +60,7 @@ a::hover {
 }
 
 .native {
-    font-family: "native";
+    font-family: math, sans-serif;
     font-weight: 100;
     font-style: italic;
     font-size: 4rem;

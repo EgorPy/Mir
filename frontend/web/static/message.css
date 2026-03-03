@@ -9,13 +9,15 @@
     word-break: break-word;
     white-space: normal;
 }
+
 .message-text {
     padding: 0.5rem 0;
     font-size: 1.5rem;
 }
 
-.message .sender-name {
+.message .message-author {
     font-size: 1rem;
+    font-weight: bold;
 }
 
 .message .message-date {
