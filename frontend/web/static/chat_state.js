@@ -5,6 +5,10 @@ export function setChatState(chatId, obj) {
     chatStates[chatId] = obj
 }
 
+export function setChatStateForce(chatId, obj) {
+    chatStates[chatId] = obj
+}
+
 export function getChatState(chatId) {
     return chatStates[chatId]
 }

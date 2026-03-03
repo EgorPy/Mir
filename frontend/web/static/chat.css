@@ -210,6 +210,17 @@
     box-sizing: border-box;
 }
 
+.join-chat {
+    padding: 0.5rem 1rem;
+    text-align: center;
+    margin: 1rem;
+    font-size: 1.5rem;
+    border-radius: 1rem;
+    display: none;
+    cursor: pointer;
+    background: rgb(90 63 255);
+}
+
 .chat-input input {
     flex: 1 1 auto;
     min-width: 0;

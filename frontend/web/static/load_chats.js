@@ -1,7 +1,7 @@
 import chatTemplateHtml from '/pages/widgets/chat.js';
-import { setupMessageInput } from '/static/chat_dialog.js';
+import { setupMessageInput } from '/static/load_messages.js';
 import { BACKEND_URL } from '/static/config.js';
-import { openChat } from './messages.js';
+import { openChat } from './open_chat.js';
 import { getChatState, setChatState } from './chat_state.js';
 
 const tempDiv = document.createElement('div');
@@ -22,7 +22,7 @@ export async function fetchChats() {
     return response.json();
 }
 
-async function fetchChatData(chatId) {
+export async function fetchChatData(chatId) {
     const response = await fetch(`${BACKEND_URL}/chats/${chatId}/info`, {
         method: 'GET',
         credentials: 'include',
@@ -84,7 +84,7 @@ export function renderChats(chats, {
     container.appendChild(fragment);
 }
 
-function attachChatHandlers() {
+export function attachChatHandlers() {
     const chatsContainer = document.querySelector('#chats');
     if (!chatsContainer) return;
 
@@ -96,7 +96,6 @@ function attachChatHandlers() {
         if (!chatId) return;
 
         let chatObject = getChatState(chatId);
-
         if (chatObject === undefined) {
             chatObject = await fetchChatData(chatId);
             setChatState(chatId, {

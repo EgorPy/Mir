@@ -1,6 +1,5 @@
 import { BACKEND_URL } from '/static/config.js';
 import { getChatState, setChatState, getChatStates } from './chat_state.js';
-import { openChat } from './messages.js';
 import { closeSearch } from './search_lens.js'
 import { renderChats, fetchChats } from './load_chats.js'
 import chatTemplateHtml from '/pages/widgets/chat.js';

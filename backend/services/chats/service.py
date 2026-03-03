@@ -55,7 +55,8 @@ async def list_chats(
     db = AutoDB(connection_manager)
 
     result = await db.execute_async(
-        "SELECT * FROM chats"
+        "SELECT DISTINCT c.* FROM chats c INNER JOIN chat_members cm ON c.id = cm.chat_id WHERE cm.user_id = ?",
+        (user_id,)
     )
 
     chats_dict = {}
@@ -200,6 +201,35 @@ async def get_messages(
 
     messages = await db.execute_async(query, (chat_id,))
     return messages
+
+
+async def get_any_member(chat_id: str,
+                         user_id: str,
+                         connection_manager: ConnectionManager = Depends(cm.dependency)):
+    db = AutoDB(connection_manager)
+
+    result = await db.execute_async("SELECT COUNT(id) FROM chat_members WHERE chat_id = ? AND user_id = ?",
+                                    (chat_id, user_id))
+
+    if not result:
+        return {"ok": True, "is_member": False, "user_id": user_id}
+
+    return {"ok": True, "is_member": bool(result[0].get("COUNT(id)")), "user_id": user_id}
+
+
+@router.get("/{chat_id}/member/")
+async def get_member(chat_id: str,
+                     user_id: str = Depends(check_user_session),
+                     connection_manager: ConnectionManager = Depends(cm.dependency)):
+    return await get_any_member(chat_id, user_id, connection_manager)
+
+
+@router.get("/{chat_id}/join/")
+async def join(chat_id: str,
+               user_id: str = Depends(check_user_session),
+               connection_manager: ConnectionManager = Depends(cm.dependency)):
+    await add_chat_member(chat_id, user_id, connection_manager)
+    return {"ok": True}
 
 
 @router.post("/{chat_id}/messages/send")
