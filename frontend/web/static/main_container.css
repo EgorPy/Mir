@@ -1,3 +1,5 @@
+﻿@import url("/static/theme.css");
+
 .main-container {
     margin: auto 2rem;
 }
@@ -8,3 +10,5 @@
     font-style: italic;
     font-size: 3rem;
 }
+
+

@@ -1,8 +1,10 @@
+﻿@import url("/static/theme.css");
+
 .text-input {
     font-size: 1rem;
-    color: white;
-    background: transparent;
-    border: 2px solid white;
+    color: var(--color-white);
+    background: var(--color-transparent);
+    border: 2px solid var(--color-white);
     outline: none;
     width: 20rem;
     height: 20px;
@@ -10,3 +12,4 @@
     border-radius: 10px;
     margin: 5px 0;
 }
+

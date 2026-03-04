@@ -231,7 +231,7 @@ async def get_any_member(chat_id: str,
     return {"ok": True, "is_member": bool(result[0].get("COUNT(id)")), "user_id": user_id}
 
 
-@router.get("/{chat_id}/member/")
+@router.get("/{chat_id}/member")
 async def get_member(chat_id: str,
                      user_id: str = Depends(check_user_session),
                      connection_manager: ConnectionManager = Depends(cm.dependency)):

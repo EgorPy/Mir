@@ -1,10 +1,12 @@
+﻿@import url("/static/theme.css");
+
 .checkbox {
     width: 20px;
     height: 20px;
-    background-color: #000;      /* чёрный фон */
-    border: 2px solid #fff;      /* белая рамка */
-    border-radius: 4px;          /* слегка скруглённые углы */
-    appearance: none;            /* отключаем стандартный вид */
+    background-color: var(--color-black);
+    border: 2px solid var(--color-white);
+    border-radius: 4px;
+    appearance: none;
     cursor: pointer;
     position: relative;
 }
@@ -13,21 +15,21 @@
     content: "";
     position: absolute;
     left: 4px;
-    top: 0px;
+    top: 0;
     width: 5px;
     height: 12px;
-    border: solid #fff;
+    border: solid var(--color-white);
     border-width: 0 4px 4px 0;
     transform: rotate(45deg);
 }
 
 .checkbox:disabled {
-    background-color: #222;      /* тёмный фон для disabled */
-    border-color: #555;          /* серая рамка для disabled */
+    background-color: var(--color-bg-elev-7);
+    border-color: var(--color-bg-elev-14);
     cursor: not-allowed;
 }
 
 .checkbox:focus {
     outline: none;
-    box-shadow: 0 0 1px 1px #fff; /* белое свечение при фокусе */
+    box-shadow: 0 0 1px 1px var(--color-white);
 }

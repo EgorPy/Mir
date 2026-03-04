@@ -1,7 +1,9 @@
+﻿@import url("/static/theme.css");
+
 .message {
     padding: 0.8rem;
     border-radius: 10px;
-    background: #1a1122;
+    background: var(--color-bg-elev-3);
     margin: 1rem;
     max-width: 40vw;
     min-width: 0;
@@ -29,3 +31,4 @@
         max-width: 70vw;
     }
 }
+

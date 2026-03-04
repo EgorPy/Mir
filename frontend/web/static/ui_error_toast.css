@@ -1,3 +1,5 @@
+﻿@import url("/static/theme.css");
+
 .ui-error-toast {
     position: fixed;
     top: 16px;
@@ -10,13 +12,13 @@
     padding: 12px 14px;
     border-radius: 14px;
 
-    background: rgba(20, 20, 20, 0.92);
-    color: #fff;
+    background: var(--overlay-toast);
+    color: var(--color-white);
 
     font-size: 14px;
     line-height: 1.25;
 
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 10px 30px var(--overlay-dark-25);
 
     z-index: 99999;
 
@@ -31,3 +33,5 @@
     transform: translateX(-50%) translateY(0);
     pointer-events: auto;
 }
+
+

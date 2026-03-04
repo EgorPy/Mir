@@ -1,3 +1,5 @@
+﻿@import url("/static/theme.css");
+
 html, body {
     margin: 0;
     padding: 0;
@@ -7,8 +9,8 @@ html, body {
 body {
     display: flex;
     flex-direction: column;
-    background: #09070b;
-    color: white;
+    background: var(--color-bg-base);
+    color: var(--color-white);
     font-family: sans-serif;
 }
 
@@ -43,11 +45,11 @@ font-display: swap;
 
 a {
     text-decoration: none;
-    color: white;
+    color: var(--color-white);
 }
 
 a::visited {
-    color: white;
+    color: var(--color-white);
 }
 
 a::hover {
@@ -65,3 +67,5 @@ a::hover {
     font-style: italic;
     font-size: 4rem;
 }
+
+

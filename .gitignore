@@ -49,5 +49,6 @@ build/
 # Others
 pip-wheel-metadata/
 *.ini
+*.pem
 config.js
 config_server.js

@@ -1,7 +1,9 @@
+﻿@import url("/static/theme.css");
+
 .a {
     font-family: sans-serif;
     font-size: 1.17rem;
-    color: white;
+    color: var(--color-white);
     text-decoration: none;
     font-weight: bold;
 }
@@ -9,3 +11,4 @@
 .a:hover{
     text-decoration: underline;
 }
+

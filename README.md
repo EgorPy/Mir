@@ -1,217 +1,152 @@
-# MethodGenerator
+﻿# Mir
 
-MethodGenerator is a **full-stack UI generation framework** that automates the creation of web pages from backend API endpoints.
-It provides a flexible system to attach additional UI elements via YAML while preserving the core form generated from the API.
+Mir is a Python full-stack project with a FastAPI backend, an HTML/CSS/JS frontend, and a separate `core` engine for UI artifact generation.
 
----
+## Current Status
 
-## Table of Contents
+- Backend is operational: authentication, sessions, chats, and messages.
+- Frontend is operational in manual mode: pages are in `frontend/web/pages`, client logic is in `frontend/web/static`.
+- Core is useful as generation infrastructure, but auto-generation is disabled by default.
+- The project does not rely on npm/webpack/vite right now: frontend is served as static assets and Jinja2 templates.
 
-1. [Project Structure](#project-structure)
-2. [Core Concept](#core-concept)
-3. [Workflow](#workflow)
-4. [YAML Elements and Decorations](#yaml-elements-and-decorations)
-5. [Process Overview](#process-overview--generation-flow)
-6. [Zones and Layouts](#zones-and-layouts)
-7. [CSS and Styling](#css-and-styling)
-8. [Runtime Behavior](#runtime-behavior-runtimejs)
-9. [Extending MethodGenerator](#extending-methodgenerator)
-10. [Testing](#testing)
+## Tech Stack
 
----
+- Python 3.9+
+- FastAPI
+- Uvicorn
+- SQLite
+- Pydantic
+- Passlib (bcrypt)
+- Jinja2
+
+Dependencies are listed in `requirements.txt`.
 
 ## Project Structure
 
-```
+```text
 backend/
   backend_main.py
-  __init__.py
+  phone_mode.py
   services/
     auth/
+      api/auth.py
+      logic/auth_logic.py
+      logic/security.py
       service.py
-      __init__.py
-      api/
-        auth.py
-      logic/
-        auth_logic.py
-        security.py
+    chats/
+      service.py
 
 core/
+  main.py
+  core_main.py
   build_site.py
   config.py
-  core_main.py
-  generate_config_js.py
-  logger.py
-  main.py
+  config.ini
   method_generator.py
-  redirects.py
   registry.py
   service_loader.py
-  task.py
   actions_generation/
-    actions_parser.py
-    action_model.py
-    api_inspector.py
-    generate_actions_js.py
   html_generation/
-    element_types.yaml
-    generate_node_html.py
-    login_example.yaml
-    node_registry.py
-    ui_enums.py
-    ui_node.py
-    yaml_parser.py
+  yaml_generation/
 
 frontend/
   frontend_main.py
   ui_yaml/
-    auth_login.yaml
-    auth_login_decoration.yaml
-    auth_register.yaml
-    ...
   web/
     pages/
-      auth_login.html
-      profile.html
-      ...
     static/
-      actions.js
-      runtime.js
-      ui_error_toast.css
-      ...
+
+tests/
 ```
 
-* **backend/**: main backend logic, services, and API endpoints.
-* **core/**: the engine of MethodGenerator (site building, HTML/YAML generation, actions parsing, runtime config).
-* **frontend/**: generated UI YAML, pages, static assets.
-* **RectPacker/**: legacy HTML layout utilities.
-* **tests/**: test scripts for backend, frontend, and runtime.
+## Quick Start
 
----
+### 1. Install dependencies
 
-## Core Concept
-
-1. The **central form** is generated automatically from backend API endpoints.
-   Each endpoint’s payload fields are converted into form inputs.
-2. Additional UI elements (headers, footers, banners, sidebars, text, etc.) are provided as **decoration YAML files**.
-3. **The form always stays in the center** of the page; additional elements are rendered around it without breaking its layout.
-4. Runtime logic handles fetching, submission, error handling, and dynamic updates for a fully interactive page.
-
----
-
-## Workflow
-
-1. **API Definition**: Define endpoints in FastAPI. Include payload fields and optional redirect behavior.
-2. **Actions JS Generation**: Use `generate_actions_js.py` to convert backend endpoints into `actions.js`.
-3. **YAML Generation**: `actions_parser.py` converts `actions.js` into base YAML forms for the frontend.
-4. **Decoration YAMLs**: Place additional YAML files in `frontend/ui_yaml/extra_ui/` and use `_decoration.yaml` suffix.
-5. **Page Generation**: `generate_page_from_ui_tree()` renders HTML pages automatically including CSS files, JS scripts, and UI
-   elements.
-6. **Runtime Handling**: `runtime.js` handles:
-
-    * Collecting input values
-    * Fetching backend endpoints
-    * Displaying errors via toast or inline elements
-    * Success redirects and dynamic rendering
-
----
-
-## YAML Elements and Decorations
-
-* **Main form YAML**: `<form_name>.yaml` (e.g., `auth_login.yaml`)
-* **Decoration YAML**: `<form_name>_decoration.yaml` and placed in `frontend/ui_yaml/extra_ui/`
-  These files define additional UI elements to render **around or relative to the form**.
-
-### Example Main Form
-
-```yaml
-type: container
-layout: vertical
-children:
-  - type: text_input
-    bind: email
-    props:
-      placeholder: "Email"
-  - type: text_input
-    bind: password
-    props:
-      placeholder: "Password"
-      type: password
-  - type: button
-    action: submit
-    endpoint: auth.login
-    props:
-      text: "Submit"
+```bash
+pip install -r requirements.txt
 ```
 
-### Example Decoration
+### 2. Configure
 
-```yaml
-type: container
-props:
-  position: form-top
-  layout: vertical
-children:
-  - type: h1
-    props:
-      text: "Welcome Back!"
-  - type: h3
-    props:
-      text: "Please enter your credentials below"
+By default, configuration is loaded from `core/config.ini`:
+
+- `DOMAIN` (typically `0.0.0.0`)
+- `BACKEND_PORT` (typically `8000`)
+- `FRONTEND_PORT` (typically `3000`)
+- `SESSION_DURATION`
+
+### 3. Run the full project
+
+```bash
+python core/main.py
 ```
 
-* Decorations are automatically merged with the main form **based on filename prefix**.
-* If no decoration exists, the main form is still rendered normally.
-* Decorations must define `props.position` to indicate placement.
+On Windows, this launcher opens separate consoles for:
 
----
+- `core/core_main.py`
+- `backend/backend_main.py`
+- `frontend/frontend_main.py`
 
-## Process Overview / Generation Flow
+### Alternative: run components separately
 
-1. Load **main YAML forms** from `frontend/ui_yaml/`.
-2. Search for **matching decoration YAMLs** (`*_decoration.yaml`).
-3. Merge decoration elements by `props.position`.
-4. Generate HTML pages in `frontend/web/pages/`.
-5. Serve pages with static CSS and JS.
+```bash
+python backend/backend_main.py
+python frontend/frontend_main.py
+python core/core_main.py
+```
 
----
+## How Frontend Routing Works
 
-## Zones and Layouts
+- `frontend/frontend_main.py` scans `frontend/web/pages/*.html` and registers routes automatically.
+- `index.html` is served at `/`, other pages are served by file name (`/login`, `/register`, `/chat`, ...).
+- Static files are served from `frontend/web/static`.
 
-* **Form-relative zones**: `form-top`, `form-bottom`, `form-left`, `form-right`
-* **Page-relative zones**: `page-top-left`, `page-top-right`, `page-bottom-left`, `page-bottom-right`
-* Each zone supports multiple elements, horizontally or vertically stacked (`props.layout`).
+## Main API Routes
 
----
+### Auth
 
-## CSS and Styling
+- `POST /auth/login/`
+- `POST /auth/register/`
+- `GET /auth/logout/`
+- `GET /auth/me`
 
-* Each element type can have a corresponding CSS file (`button.css`, `ui_error_toast.css`, etc.).
-* CSS files are automatically included if present in `frontend/web/static`.
-* Inline styles (`props.style`) and classes (`props.class`) can be used for customization.
+### Chats
 
----
+- `GET /chats/list`
+- `GET /chats/search/{public_id}`
+- `POST /chats/create`
+- `POST /chats/delete`
+- `GET /chats/{chat_id}/info`
+- `GET /chats/{chat_id}/join/`
+- `GET /chats/{chat_id}/leave`
+- `GET /chats/{chat_id}/member/`
+- `GET /chats/{chat_id}/messages`
+- `POST /chats/{chat_id}/messages/send`
 
-## Runtime Behavior (`runtime.js`)
+## Core and UI Generation
 
-* Collects values from `data-bind` inputs.
-* Calls backend endpoints defined in `actions.js`.
-* Displays **error toasts** or messages based on status codes.
-* Handles **redirects** on success.
-* Updates bound elements dynamically without a page reload.
+`core` can run the following pipeline:
 
----
+1. API inspection,
+2. `actions.js` generation,
+3. YAML generation,
+4. HTML generation.
 
-## Extending MethodGenerator
+Important: auto mode is currently disabled (`AUTO_GENERATION_ENABLED = False` in `core/build_site.py`), and `core/core_main.py` calls `build_site(manual=False)`, so generation is skipped by default.
 
-1. **Add new YAML elements**: Create a YAML file with `type`, `props`, and `children`.
-2. **Add decoration YAMLs**: Optionally, create `<form_name>_decoration.yaml` to render extra UI around forms.
-3. **Add CSS**: Name your CSS file after the element type and place it in `frontend/web/static`.
+This is the intentional current setup: the project runs with a manual frontend, while the generator remains available as an engine and foundation for further development.
 
----
+## Tests
 
-## Testing
+`tests/` contains helper and integration scripts. It is not yet a fully standardized unit/integration test suite with guaranteed green runs in a single command.
 
-* **Legacy tests**: Located in `tests/` and `RectPacker/tests/`.
-* Test API YAML generation, runtime behavior, UI rendering, and HTML output.
-* Example: `ui_runtime_test.py` manually generates `actions.js` by inspecting FastAPI router.
+## Local-Only Files
+
+- `database.db` and local certificates (`*.pem`) may exist in the workspace for local runtime needs.
+- These files are listed in `.gitignore` and are not intended to be committed.
+
+## Docs Directory
+
+Files in `docs/` contain ideas and work notes related to the generator (`extra_ui`, `widgets_and_pages`, `yaml_value_sources`, etc.).
+Treat them as engineering notes; this `README.md` is the source of truth for the current project state.

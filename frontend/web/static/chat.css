@@ -1,3 +1,5 @@
+﻿@import url("/static/theme.css");
+
 .chat-section {
     display: flex;
     flex-direction: row;
@@ -15,7 +17,7 @@
 
 .actual-chat {
     flex: 1;
-    background: #0f0a14;
+    background: var(--color-bg-elev-1);
 }
 
 .chats {
@@ -25,7 +27,7 @@
 }
 
 .chat .section {
-/*    border: 1px solid white;*/
+/*    border: 1px solid var(--color-white);*/
     display: flex;
     justify-content: flex-start;
     align-items: center;
@@ -64,12 +66,12 @@
 
 .chats::-webkit-scrollbar-track,
 .messages-container::-webkit-scrollbar-track {
-    background: #1a1a1a;
+    background: var(--color-bg-elev-4);
 }
 
 .chats::-webkit-scrollbar-thumb,
 .messages-container::-webkit-scrollbar-thumb {
-    background: #444;
+    background: var(--color-bg-elev-13);
     border-radius: 4px;
 }
 
@@ -108,11 +110,12 @@
     justify-content: space-between;
     flex-direction: column;
     height: 100%;
+    position: relative;
 }
 
 .resizer {
     width: 5px;
-    background: #333;
+    background: var(--color-bg-elev-12);
     cursor: col-resize;
     transition: 0.2s;
     flex-shrink: 0;
@@ -120,7 +123,7 @@
 
 .resizer:hover,
 .resizer:active {
-    background: #666;
+    background: var(--color-bg-elev-15);
 }
 
 .chat-info {
@@ -138,7 +141,7 @@
 }
 
 .chat {
-    background: #141018;
+    background: var(--color-bg-elev-16);
     width: 100%;
     box-sizing: border-box;
     cursor: pointer;
@@ -147,11 +150,11 @@
 }
 
 .chat:hover {
-    background: #1e1428;
+    background: var(--color-bg-elev-6);
 }
 
 .chat-main.selected .chat {
-    background: #23182f;
+    background: var(--color-bg-elev-8);
 }
 
 .chat .section {
@@ -176,8 +179,8 @@
     left: 0;
     right: 0;
     position: sticky;
-    background: #09070b;
-    color: #fff;
+    background: var(--color-bg-base);
+    color: var(--color-white);
     display: flex;
     align-items: center;
     padding: 0 1rem;
@@ -194,16 +197,17 @@
     background: none;
     border: none;
     user-select: none;
-    color: #fff;
+    color: var(--color-white);
     cursor: pointer;
     padding: 0 0.5rem;
 }
 
 .chat-input {
-    position: sticky;
+    position: absolute;
     bottom: 0;
     display: flex;
     padding: 0.5rem;
+    background: var(--color-bg-elev-1);
     padding-bottom: 1rem;
     gap: 0.5rem;
     flex: 0 0 auto;
@@ -215,21 +219,32 @@
     display: none;
     padding: 0.5rem 1rem;
     text-align: center;
-    margin: 50% auto;
+    margin: 0;
+    width: 80%;
+    position: absolute;
+    top: calc(50% - 3rem);
+    left: 50%;
+    transform: translate(-50%, -50%);
     font-size: 1.5rem;
     border-radius: 2rem;
-    border: 1px solid #2c1e86;
+    border: 1px solid var(--color-accent-6);
+    z-index: 2;
 }
 
 .join-chat {
     display: none;
+    position: absolute;
+    width: calc(100% - 2rem);
+    bottom: 0.5rem;
+    left: 1rem;
+    right: 1rem;
+    box-sizing: border-box;
     padding: 0.5rem 1rem;
     text-align: center;
-    margin: 1rem 0.5rem;
     font-size: 1.5rem;
     border-radius: 2rem;
     cursor: pointer;
-    background: rgb(90 63 255);
+    background: var(--color-accent-4);
 }
 
 .chat-input input {
@@ -237,9 +252,9 @@
     min-width: 0;
     padding: 0.5rem 1rem;
     border-radius: 2rem;
-    border: 1px solid #2c1e86;
-    background: #140f1a;
-    color: #fff;
+    border: 1px solid var(--color-accent-6);
+    background: var(--color-bg-elev-2);
+    color: var(--color-white);
     font-size: 1.5rem;
     box-sizing: border-box;
 }
@@ -250,8 +265,8 @@
     height: 3rem;
     border: none;
     border-radius: 2rem;
-    background: #5a3fff;
-    color: #fff;
+    background: var(--color-accent-4);
+    color: var(--color-white);
     cursor: pointer;
     font-size: 1rem;
     box-sizing: border-box;
@@ -259,11 +274,10 @@
 }
 
 .chat-input button:hover {
-    background: #50f;
+    background: var(--color-accent-5);
 }
 
 .messages-container {
-    padding: 0 1rem;
     overflow-y: auto;
     max-height: calc(100% - 4.7rem); /* header + input */
     flex: 1 1 auto;
@@ -273,7 +287,7 @@
     position: fixed;
     top: 0;
     height: 4rem;
-    background-color: #09070b;
+    background-color: var(--color-bg-base);
     display: none;
     z-index: 10000;
     align-items: center;
@@ -319,7 +333,7 @@
         width: 100%;
         height: 100%;
         z-index: 998;
-        background: #0f0a14;
+        background: var(--color-bg-elev-1);
         transition: left 0.25s ease;
     }
 
@@ -340,11 +354,19 @@
     }
 
     .messages-container {
-        padding: 1rem;
         padding-top: 0;
         padding-bottom: 0;
         margin-top: 4rem;
+        margin-bottom: 4rem;
         overflow-y: auto;
         flex: 1 1 auto;
     }
 }
+
+
+
+
+
+
+
+

@@ -1,0 +1,71 @@
+﻿:root {
+    --color-white: #FFFFFF;
+    --color-black: #000000;
+    --color-transparent: #00000000;
+
+    --color-bg-base: #09070B;
+    --color-bg-elev-1: #0F0A14;
+    --color-bg-elev-2: #140F1A;
+    --color-bg-elev-3: #1A1122;
+    --color-bg-elev-4: #1A1A1A;
+    --color-bg-elev-5: #1C1625;
+    --color-bg-elev-6: #1E1428;
+    --color-bg-elev-7: #222222;
+    --color-bg-elev-8: #23182F;
+    --color-bg-elev-9: #2D2D2D;
+    --color-bg-elev-10: #2E2438;
+    --color-bg-elev-11: #2F2438;
+    --color-bg-elev-12: #333333;
+    --color-bg-elev-13: #444444;
+    --color-bg-elev-14: #555555;
+    --color-bg-elev-15: #666666;
+    --color-bg-elev-16: #141018;
+
+    --color-text-muted-1: #888888;
+    --color-text-muted-2: #999999;
+    --color-text-muted-3: #AAAAAA;
+    --color-border-soft: #DDDDDD;
+
+    --color-accent: #667EEA;
+    --color-accent-hover: #5A6FD8;
+    --color-accent-2: #764BA2;
+    --color-accent-3: #F093FB;
+    --color-accent-4: #5A3FFF;
+    --color-accent-5: #5500FF;
+    --color-accent-6: #2C1E86;
+    --color-danger: #FF4444;
+    --color-danger-strong: #FF0000;
+    --color-success-bg: #EEFFEE;
+    --color-danger-bg: #FFEEEE;
+    --color-selection: #6A5ACD;
+
+    --overlay-dark-50: #00000080;
+    --overlay-dark-30: #0000004D;
+    --overlay-dark-25: #00000040;
+    --overlay-dark-20: #00000033;
+    --overlay-dark-15: #00000026;
+    --overlay-dark-10: #0000001A;
+    --overlay-dark-08: #00000014;
+    --overlay-toast: #141414EB;
+
+    --overlay-light-90: #FFFFFFE6;
+    --overlay-light-80: #FFFFFFCC;
+    --overlay-light-30: #FFFFFF4D;
+    --overlay-light-25: #FFFFFF40;
+    --overlay-light-20: #FFFFFF33;
+    --overlay-light-18: #FFFFFF2E;
+    --overlay-light-15: #FFFFFF26;
+    --overlay-light-12: #FFFFFF1F;
+    --overlay-light-10: #FFFFFF1A;
+    --overlay-light-08: #FFFFFF14;
+    --overlay-light-05: #FFFFFF0D;
+
+    --overlay-accent-40: #667EEA66;
+    --overlay-accent-30: #667EEA4D;
+    --overlay-accent-20: #667EEA33;
+    --overlay-accent-10: #667EEA1A;
+    --overlay-accent2-10: #764BA21A;
+    --overlay-fx-1: #7877C61A;
+    --overlay-fx-2: #FF77C614;
+    --overlay-fx-3: #78DBFF0D;
+}

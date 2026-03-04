@@ -1,11 +1,13 @@
+﻿@import url("/static/theme.css");
+
 /* CSS Reset */
 *, *::before, *::after {
-/*    outline: 2px solid white;*/
+/*    outline: 2px solid var(--color-white);*/
     margin: 0;
     padding: 0;
     box-sizing: border-box;
     font-family: sans-serif;
-    color: white;
+    color: var(--color-white);
 }
 
 html {
@@ -18,8 +20,8 @@ html {
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
     min-height: 100vh;
-    background: #000000;
-    color: #1a1a1a;
+    background: var(--color-black);
+    color: var(--color-bg-elev-4);
     overflow-x: hidden;
     font-weight: 400;
     width: 100%;
@@ -31,26 +33,26 @@ h1, h2, h3 {
 
 input {
     padding: 14px 20px;
-    background: transparent;
+    background: var(--color-transparent);
     border-radius: 10px;
-    border: 2px solid white;
-    color: white;
+    border: 2px solid var(--color-white);
+    color: var(--color-white);
     outline: none;
 }
 
 input:focus {
-    border: 2px solid #ddd;
+    border: 2px solid var(--color-border-soft);
 }
 
 ::-moz-selection {
-    background: slateblue;
+    background: var(--color-selection);
 }
 
 ::selection {
-    background: slateblue;
+    background: var(--color-selection);
 }
 
-/* Контейнеры */
+/* РљРѕРЅС‚РµР№РЅРµСЂС‹ */
 .container {
     width: 100%;
     max-width: 1200px;
@@ -64,21 +66,21 @@ input:focus {
     top: 0;
     left: 0;
     right: 0;
-    background: transparent;
+    background: var(--color-transparent);
     z-index: 1000;
     transition: all 0.3s ease;
-    border-bottom: 1px solid transparent;
+    border-bottom: 1px solid var(--color-transparent);
     backdrop-filter: blur(5px);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-    box-shadow: 0 1px 20px rgba(0, 0, 0, 0.08);
+    border-bottom: 1px solid var(--overlay-dark-10);
+    box-shadow: 0 1px 20px var(--overlay-dark-08);
     padding: 0 2rem;
 }
 
 .header.scrolled {
-    background: rgba(255, 255, 255, 0.9);
+    background: var(--overlay-light-90);
     backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-    box-shadow: 0 1px 20px rgba(0, 0, 0, 0.08);
+    border-bottom: 1px solid var(--overlay-dark-10);
+    box-shadow: 0 1px 20px var(--overlay-dark-08);
 }
 
 .nav {
@@ -94,7 +96,7 @@ input:focus {
 a.logo {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #ffffff;
+    color: var(--color-white);
     text-decoration: none;
     letter-spacing: -0.02em;
     transition: color 0.3s ease;
@@ -104,12 +106,12 @@ a.logo:hover {
     text-decoration: underline;
 }
 
-/* Hero секция */
+/* Hero СЃРµРєС†РёСЏ */
 .hero {
     padding: 0;
     text-align: center;
-    background: linear-gradient(135deg, #000000 0%, #2d2d2d 100%);
-    color: white;
+    background: linear-gradient(135deg, var(--color-black) 0%, var(--color-bg-elev-9) 100%);
+    color: var(--color-white);
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -125,9 +127,9 @@ a.logo:hover {
     right: 0;
     bottom: 0;
     background:
-    radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.05) 0%, transparent 50%);
+    radial-gradient(circle at 20% 80%, var(--overlay-fx-1) 0%, var(--color-transparent) 50%),
+    radial-gradient(circle at 80% 20%, var(--overlay-fx-2) 0%, var(--color-transparent) 50%),
+    radial-gradient(circle at 40% 40%, var(--overlay-fx-3) 0%, var(--color-transparent) 50%);
 }
 
 .hero .container {
@@ -157,9 +159,9 @@ a.logo:hover {
 }
 
 .gradient-text {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-2) 50%, var(--color-accent-3) 100%);
     -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    -webkit-text-fill-color: var(--color-transparent);
     background-clip: text;
     background-size: 200% 200%;
     animation: gradient-shift 4s ease infinite;
@@ -171,7 +173,7 @@ a.logo:hover {
     50% { background-position: 100% 50%; }
 }
 
-/* Сетка сервисов */
+/* РЎРµС‚РєР° СЃРµСЂРІРёСЃРѕРІ */
 .services-grid {
     display: grid;
     gap: 2rem;
@@ -189,11 +191,11 @@ a.logo:hover {
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 }
 
-/* Карточки сервисов */
+/* РљР°СЂС‚РѕС‡РєРё СЃРµСЂРІРёСЃРѕРІ */
 .service-card {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--overlay-light-08);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid var(--overlay-light-12);
     border-radius: 1.25rem;
     padding: 2.5rem 2rem;
     text-align: center;
@@ -209,7 +211,7 @@ a.logo:hover {
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+    background: linear-gradient(90deg, var(--color-transparent), var(--overlay-light-05), var(--color-transparent));
     transition: left 0.6s ease;
 }
 
@@ -218,29 +220,29 @@ a.logo:hover {
 }
 
 .service-card.primary-card {
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: var(--overlay-light-12);
+    border: 1px solid var(--overlay-light-18);
 }
 
 .service-card:hover {
     transform: translateY(-8px);
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.25);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    background: var(--overlay-light-15);
+    border-color: var(--overlay-light-25);
+    box-shadow: 0 20px 40px var(--overlay-dark-15);
 }
 
 .service-icon {
     font-size: 3rem;
     margin-bottom: 1.5rem;
     display: block;
-    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+    filter: drop-shadow(0 4px 8px var(--overlay-dark-20));
 }
 
 .service-card h3 {
     font-size: 1.375rem;
     margin-bottom: 1rem;
     font-weight: 600;
-    color: #ffffff;
+    color: var(--color-white);
 }
 
 .service-card p {
@@ -248,15 +250,15 @@ a.logo:hover {
     margin-bottom: 2rem;
     line-height: 1.6;
     font-size: 1rem;
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--overlay-light-90);
 }
 
-/* Секция всех сервисов */
+/* РЎРµРєС†РёСЏ РІСЃРµС… СЃРµСЂРІРёСЃРѕРІ */
 .all-services {
     padding: 8rem 0;
-    background: linear-gradient(135deg, #000000 0%, #2d2d2d 100%);
+    background: linear-gradient(135deg, var(--color-black) 0%, var(--color-bg-elev-9) 100%);
     position: relative;
-    color: white;
+    color: var(--color-white);
 }
 
 .all-services::before {
@@ -267,9 +269,9 @@ a.logo:hover {
     right: 0;
     bottom: 0;
     background:
-    radial-gradient(circle at 30% 70%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 70% 30%, rgba(255, 119, 198, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 50% 50%, rgba(120, 219, 255, 0.05) 0%, transparent 50%);
+    radial-gradient(circle at 30% 70%, var(--overlay-fx-1) 0%, var(--color-transparent) 50%),
+    radial-gradient(circle at 70% 30%, var(--overlay-fx-2) 0%, var(--color-transparent) 50%),
+    radial-gradient(circle at 50% 50%, var(--overlay-fx-3) 0%, var(--color-transparent) 50%);
 }
 
 .all-services .container {
@@ -281,41 +283,41 @@ a.logo:hover {
     text-align: center;
     font-size: clamp(2.5rem, 5vw, 3.5rem);
     margin-bottom: 4rem;
-    color: #ffffff;
+    color: var(--color-white);
     font-weight: 700;
     letter-spacing: -0.02em;
 }
 
 .all-services .service-card {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--overlay-light-08);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #ffffff;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--overlay-light-12);
+    color: var(--color-white);
+    box-shadow: 0 2px 10px var(--overlay-dark-10);
 }
 
 .all-services .service-card h3 {
-    color: #ffffff;
+    color: var(--color-white);
 }
 
 .all-services .service-card p {
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--overlay-light-80);
     opacity: 1;
 }
 
 .all-services .service-card:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.25);
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+    background: var(--overlay-light-15);
+    border-color: var(--overlay-light-25);
+    box-shadow: 0 15px 40px var(--overlay-dark-20);
     transform: translateY(-5px);
 }
 
-/* CTA секция */
+/* CTA СЃРµРєС†РёСЏ */
 .cta-section {
     padding: 8rem 0;
     text-align: center;
-    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-    color: white;
+    background: linear-gradient(135deg, var(--color-bg-elev-4) 0%, var(--color-bg-elev-9) 100%);
+    color: var(--color-white);
     position: relative;
 }
 
@@ -327,8 +329,8 @@ a.logo:hover {
     right: 0;
     bottom: 0;
     background:
-    radial-gradient(circle at 75% 25%, rgba(102, 126, 234, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 25% 75%, rgba(118, 75, 162, 0.1) 0%, transparent 50%);
+    radial-gradient(circle at 75% 25%, var(--overlay-accent-10) 0%, var(--color-transparent) 50%),
+    radial-gradient(circle at 25% 75%, var(--overlay-accent2-10) 0%, var(--color-transparent) 50%);
 }
 
 .cta-section .container {
@@ -353,7 +355,7 @@ a.logo:hover {
     line-height: 1.6;
 }
 
-/* Кнопки */
+/* РљРЅРѕРїРєРё */
 .btn {
     display: inline-flex;
     align-items: center;
@@ -362,9 +364,9 @@ a.logo:hover {
     font-size: 1rem;
     font-weight: 600;
     text-decoration: none;
-    border: 2px solid #ffffff;
-    background: transparent;
-    color: #ffffff;
+    border: 2px solid var(--color-white);
+    background: var(--color-transparent);
+    color: var(--color-white);
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border-radius: 1rem;
@@ -382,7 +384,7 @@ a.logo:hover {
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    background: linear-gradient(90deg, var(--color-transparent), var(--overlay-light-10), var(--color-transparent));
     /*    transition: left 0.6s ease;*/
 }
 
@@ -391,10 +393,10 @@ a.logo:hover {
 }
 
 .btn:hover {
-    background: #ffffff;
-    /*    color: #1a1a1a;*/
+    background: var(--color-white);
+    /*    color: var(--color-bg-elev-4);*/
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 25px var(--overlay-light-15);
 }
 
 .btn:active {
@@ -402,30 +404,30 @@ a.logo:hover {
 }
 
 .btn-create-account {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: var(--overlay-light-10);
+    border-color: var(--overlay-light-30);
     backdrop-filter: blur(10px);
 }
 
 .btn-create-account:hover {
-    background: #ffffff;
-    color: #1a1a1a;
+    background: var(--color-white);
+    color: var(--color-bg-elev-4);
 }
 
 .header.scrolled .btn-create-account {
-    background: #1a1a1a;
-    border-color: #1a1a1a;
-    color: #ffffff;
+    background: var(--color-bg-elev-4);
+    border-color: var(--color-bg-elev-4);
+    color: var(--color-white);
 }
 
 .header.scrolled .btn-create-account:hover {
-    background: #333;
-    border-color: #333;
+    background: var(--color-bg-elev-12);
+    border-color: var(--color-bg-elev-12);
 }
 
 .btn-service {
-    background: rgba(255, 255, 255, 0.9);
-    color: #1a1a1a;
+    background: var(--overlay-light-90);
+    color: var(--color-bg-elev-4);
     border: none;
     padding: 0.875rem 1.75rem;
     font-weight: 600;
@@ -435,49 +437,49 @@ a.logo:hover {
 }
 
 .btn-service.red {
-    border: 2px solid red !important;
+    border: 2px solid var(--color-danger-strong) !important;
     background: none !important;
-    color: red !important;
+    color: var(--color-danger-strong) !important;
 }
 
 .btn-service:hover {
-    background: #ffffff;
-    color: #1a1a1a;
+    background: var(--color-white);
+    color: var(--color-bg-elev-4);
     transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(255, 255, 255, 0.2);
+    box-shadow: 0 10px 25px var(--overlay-light-20);
 }
 
 .btn-primary {
-    background: #667eea;
-    color: white;
+    background: var(--color-accent);
+    color: var(--color-white);
     border: none;
     padding: 1.25rem 2.5rem;
     font-size: 1.125rem;
     font-weight: 600;
     border-radius: 1rem;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 4px 15px var(--overlay-accent-30);
 }
 
 .btn-primary:hover {
-    background: #5a6fd8;
+    background: var(--color-accent-hover);
     transform: translateY(-3px);
-    box-shadow: 0 15px 30px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 15px 30px var(--overlay-accent-40);
 }
 
 .btn-back {
     min-width: 280px;
     font-size: 1.125rem;
-    background: white;
-    color: #1a1a1a;
-    border: 2px solid white;
+    background: var(--color-white);
+    color: var(--color-bg-elev-4);
+    border: 2px solid var(--color-white);
 }
 
 .btn-back:hover {
-    background: #1a1a1a;
-    color: white;
+    background: var(--color-bg-elev-4);
+    color: var(--color-white);
 }
 
-/* Страница 404 */
+/* РЎС‚СЂР°РЅРёС†Р° 404 */
 .error-page {
     display: flex;
     flex-direction: column;
@@ -487,24 +489,24 @@ a.logo:hover {
     gap: 3rem;
     min-height: 100vh;
     padding: 2rem;
-    background: linear-gradient(135deg, #000000 0%, #2d2d2d 100%);
-    color: white;
+    background: linear-gradient(135deg, var(--color-black) 0%, var(--color-bg-elev-9) 100%);
+    color: var(--color-white);
 }
 
 .error-code {
     font-size: clamp(8rem, 25vw, 15rem);
     font-weight: 800;
     line-height: 1;
-    background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
+    background: linear-gradient(135deg, var(--color-accent), var(--color-accent-2), var(--color-accent-3));
     -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    -webkit-text-fill-color: var(--color-transparent);
     background-clip: text;
 }
 
 .form-container {
     height: 100vh;
-    background: #000;
-    color: white;
+    background: var(--color-black);
+    color: var(--color-white);
     text-align: center;
     padding: 8rem 2rem;
     font-family: sans-serif;
@@ -517,12 +519,12 @@ a.logo:hover {
 }
 
 .subtitle {
-    color: #aaa;
+    color: var(--color-text-muted-3);
     margin-bottom: 2rem;
 }
 
 .subtitle a {
-    color: white;
+    color: var(--color-white);
     text-decoration: none;
     font-weight: bold;
 }
@@ -532,7 +534,7 @@ a.logo:hover {
 }
 
 .error-text {
-    color: #ff4444;
+    color: var(--color-danger);
     margin-bottom: 1rem;
     min-height: 1.5rem;
 }
@@ -550,28 +552,28 @@ a.logo:hover {
 .contact-form input {
     width: 100%;
     padding: 14px 20px;
-    border: 2px solid white;
+    border: 2px solid var(--color-white);
     border-radius: 10px;
-    background: transparent;
-    color: white;
+    background: var(--color-transparent);
+    color: var(--color-white);
     font-size: 16px;
     outline: none;
 }
 
 .contact-form input::placeholder {
-    color: #888;
+    color: var(--color-text-muted-1);
 }
 
 .contact-form input:focus {
-    border-color: #ddd;
+    border-color: var(--color-border-soft);
 }
 
 .contact-form button {
     width: 100%;
     padding: 14px 30px;
     font-size: 16px;
-    background: white;
-    color: black;
+    background: var(--color-white);
+    color: var(--color-black);
     border: none;
     border-radius: 10px;
     cursor: pointer;
@@ -580,10 +582,10 @@ a.logo:hover {
 }
 
 .contact-form button:hover {
-    background: #ddd;
+    background: var(--color-border-soft);
 }
 
-/* Стили для профиля */
+/* РЎС‚РёР»Рё РґР»СЏ РїСЂРѕС„РёР»СЏ */
 .profile-container {
     max-width: 80vw;
     margin: 0 auto;
@@ -605,8 +607,8 @@ a.logo:hover {
 }
 
 .profile-info {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: var(--overlay-light-08);
+    border: 1px solid var(--overlay-light-12);
     border-radius: 1rem;
     padding: 1.5rem;
     backdrop-filter: blur(10px);
@@ -617,7 +619,7 @@ a.logo:hover {
     justify-content: space-between;
     align-items: center;
     padding: 0.75rem 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--overlay-light-10);
 }
 
 .info-item:last-child {
@@ -625,18 +627,18 @@ a.logo:hover {
 }
 
 .info-label {
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--overlay-light-80);
     font-weight: 500;
 }
 
 .info-value {
-    color: #ffffff;
+    color: var(--color-white);
     font-weight: 600;
 }
 
 .bonus-info {
-    background: rgba(102, 126, 234, 0.1);
-    border: 1px solid rgba(102, 126, 234, 0.2);
+    background: var(--overlay-accent-10);
+    border: 1px solid var(--overlay-accent-20);
     border-radius: 1rem;
     padding: 1.25rem;
     text-align: center;
@@ -644,20 +646,20 @@ a.logo:hover {
 
 .bonus-info p {
     margin: 0;
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--overlay-light-90);
     font-weight: 500;
 }
 
 .upgrade-section {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: var(--overlay-light-08);
+    border: 1px solid var(--overlay-light-12);
     border-radius: 1rem;
     padding: 1.5rem;
     backdrop-filter: blur(10px);
 }
 
 .upgrade-section h2 {
-    color: #ffffff;
+    color: var(--color-white);
     margin-bottom: 1rem;
     font-size: 1.3rem;
     text-align: center;
@@ -673,13 +675,13 @@ a.logo:hover {
     padding: 0.5rem 0;
     padding-left: 1.5rem;
     position: relative;
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--overlay-light-80);
     line-height: 1.5;
 }
 
 .upgrade-list li:before {
-    content: "•";
-    color: #667eea;
+    content: "вЂў";
+    color: var(--color-accent);
     font-weight: bold;
     position: absolute;
     left: 0;
@@ -692,7 +694,7 @@ a.logo:hover {
     gap: 1rem;
 }
 
-/* Используем существующие стили кнопок из login */
+/* РСЃРїРѕР»СЊР·СѓРµРј СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРµ СЃС‚РёР»Рё РєРЅРѕРїРѕРє РёР· login */
 .profile-actions .btn-service {
     width: 100%;
     justify-content: center;
@@ -701,7 +703,7 @@ a.logo:hover {
     min-height: 3.5rem;
 }
 
-/* Адаптивность */
+/* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ */
 @media (max-width: 768px) {
     .profile-container {
         margin: 1rem;
@@ -726,7 +728,7 @@ a.logo:hover {
     }
 }
 
-/* Адаптивность для мобильных устройств */
+/* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ РґР»СЏ РјРѕР±РёР»СЊРЅС‹С… СѓСЃС‚СЂРѕР№СЃС‚РІ */
 @media (max-width: 768px) {
     .container {
         padding: 0 1.5rem;
@@ -800,3 +802,6 @@ a.logo:hover {
         font-size: 1rem;
     }
 }
+
+
+
