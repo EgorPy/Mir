@@ -12,21 +12,21 @@ body {
     font-family: sans-serif;
 }
 
-@font-face {
-font-family: 'Cursive';
-src: url('fonts/GreatVibes/GreatVibes-Regular.ttf') format('truetype');
-font-weight: normal;
-font-style: normal;
-font-display: swap;
-}
+/*@font-face {*/
+/*font-family: 'Cursive';*/
+/*src: url('fonts/GreatVibes/GreatVibes-Regular.ttf') format('truetype');*/
+/*font-weight: normal;*/
+/*font-style: normal;*/
+/*font-display: swap;*/
+/*}*/
 
-@font-face {
-font-family: 'Native'
-src: url("fonts/Merriweather/Merriweather-VariableFont_opsz,wdth,wght.ttf") format('truetype');
-font-weight: normal;
-font-style: normal;
-font-display: swap;
-}
+/*@font-face {*/
+/*font-family: 'Native'*/
+/*src: url("fonts/Merriweather/Merriweather-VariableFont_opsz,wdth,wght.ttf") format('truetype');*/
+/*font-weight: normal;*/
+/*font-style: normal;*/
+/*font-display: swap;*/
+/*}*/
 
 @font-face {
 font-family: 'Native'
@@ -55,7 +55,7 @@ a::hover {
 }
 
 .cursive {
-    font-family: 'Cursive';
+    font-family: "Great Vibes", cursive;
     font-size: 4rem;
 }
 

@@ -141,6 +141,20 @@ INNER JOIN chat_members cm ON u.id = cm.user_id WHERE cm.chat_id = ?""", (chat_i
     }
 
 
+@router.get("/{chat_id}/leave")
+async def leave_chat(
+        chat_id: str,
+        user_id: str = Depends(check_user_session),
+        connection_manager: ConnectionManager = Depends(cm.dependency)
+):
+    db = AutoDB(connection_manager)
+    await db.delete_chat_member(
+        chat_id=chat_id,
+        user_id=user_id
+    )
+    return {"ok": True}
+
+
 @router.post("/delete")
 async def delete_chat(
         data: ChatDelete,

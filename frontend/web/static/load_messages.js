@@ -3,6 +3,7 @@ import messageTemplateHtml from '/pages/widgets/message.js';
 const tempDiv = document.createElement('div');
 tempDiv.innerHTML = messageTemplateHtml;
 const messageTemplate = tempDiv.firstElementChild;
+const noMessagesYet = document.querySelector(".no-messages-yet")
 
 let currentChatId = null;
 let inputInitialized = false;
@@ -25,6 +26,14 @@ export async function loadMessages(chatId) {
         if (!response.ok) throw new Error(`HTTP error ${response.status}`);
 
         const messages = await response.json();
+
+        if (messages.length == 0) {
+            noMessagesYet.style.display = "block"
+            messagesContainer.style.display = "none"
+        } else {
+            noMessagesYet.style.display = "none"
+            messagesContainer.style.display = "block"
+        }
 
         messages.forEach(msg => {
             const messageElement = messageTemplate.cloneNode(true);

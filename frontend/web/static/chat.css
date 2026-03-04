@@ -105,6 +105,7 @@
     min-width: 0;
     overflow: hidden;
     display: flex;
+    justify-content: space-between;
     flex-direction: column;
     height: 100%;
 }
@@ -210,13 +211,23 @@
     box-sizing: border-box;
 }
 
-.join-chat {
+.no-messages-yet {
+    display: none;
     padding: 0.5rem 1rem;
     text-align: center;
-    margin: 1rem;
+    margin: 50% auto;
     font-size: 1.5rem;
-    border-radius: 1rem;
+    border-radius: 2rem;
+    border: 1px solid #2c1e86;
+}
+
+.join-chat {
     display: none;
+    padding: 0.5rem 1rem;
+    text-align: center;
+    margin: 1rem 0.5rem;
+    font-size: 1.5rem;
+    border-radius: 2rem;
     cursor: pointer;
     background: rgb(90 63 255);
 }

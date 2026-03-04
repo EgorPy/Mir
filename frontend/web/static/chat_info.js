@@ -1,6 +1,7 @@
 import { BACKEND_URL } from '/static/config.js';
 import { openModal, closeModal } from '/static/modal.js';
 import { getChatState } from '/static/chat_state.js'
+import { leaveChat } from '/static/leave_chat.js'
 
 document.addEventListener('click', async (e) => {
     if (e.target.closest('.chat-avatar') || e.target.closest('.chat-title')) {
@@ -21,6 +22,11 @@ async function showChatInfo(chatId) {
     const modalContent = createChatInfoHTML(chat);
     openModal(modalContent);
     setTimeout(setupModalEventListeners, 0);
+    const modalContentElement = modal.querySelector('.modal-content');
+    const leaveChatBtn = modalContentElement.querySelector("#leaveChatBtn")
+    leaveChatBtn.addEventListener("click", () => {
+        leaveChat(chatId)
+    })
 }
 
 function setupModalEventListeners() {
@@ -64,7 +70,7 @@ function createChatInfoHTML(chat) {
                 </div>
 
                 <div class="chat-info-buttons">
-                    <button class="modal-btn delete-chat-btn" id="deleteChatBtn">Удалить</button>
+                    <button class="modal-btn leave-chat-btn" id="leaveChatBtn">Покинуть</button>
                 </div>
 
                 <div class="chat-info-details">

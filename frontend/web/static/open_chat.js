@@ -53,7 +53,6 @@ async function doJoinChat() {
     joinChat.style.display = 'none'
 
     const chatObject = await fetchChatData(tempChatId);
-    console.log(chatObject)
     setChatStateForce(tempChatId, {
         id: chatObject.id,
         title: chatObject.title,
