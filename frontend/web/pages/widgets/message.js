@@ -1,6 +1,16 @@
 export default `
-<div class="message">
-    <div class="message-author">Имя</div>
-    <div class="message-text">Текст сообщения при всём при этом тогда привет пока пусть тогда при всём при этом тогда привет пока пусть тогда при всём при этом тогда привет пока пусть тогда</div>
-    <div class="message-date"></div>
+<div class="message" data-message-id="" data-chat-id="" data-is-favorite="false">
+    <div class="message-main">
+        <div class="message-top">
+            <span class="message-author">User</span>
+            <span class="message-type"></span>
+            <span class="message-forwarded" title="Forwarded">Forwarded</span>
+            <span class="message-favorite-indicator" title="Favorite">&#9733;</span>
+        </div>
+        <div class="message-text"></div>
+        <div class="message-bottom">
+            <span class="message-date"></span>
+            <span class="message-read"></span>
+        </div>
+    </div>
 </div>`;

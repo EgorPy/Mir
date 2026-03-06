@@ -54,6 +54,68 @@ class AuthLogic:
             password=hash_password(password),
         )
 
+        user_id = await db.get_id_from_users(email=email)
+        if user_id:
+            public_id = f"favorites_{user_id}"
+
+            await db.execute_async(
+                """
+                CREATE TABLE IF NOT EXISTS chats (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    created_at TEXT,
+                    owner_id TEXT,
+                    title TEXT,
+                    public_id TEXT,
+                    type TEXT,
+                    description TEXT,
+                    avatar_url TEXT
+                )
+                """
+            )
+            await db.execute_async(
+                """
+                CREATE TABLE IF NOT EXISTS chat_members (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    chat_id TEXT,
+                    user_id TEXT,
+                    role TEXT,
+                    joined_at TEXT
+                )
+                """
+            )
+
+            chat = await db.execute_async(
+                "SELECT id FROM chats WHERE public_id = ? AND type = 'favorites'",
+                (public_id,)
+            )
+
+            if not chat:
+                now = datetime.utcnow().isoformat()
+                await db.execute_async(
+                    """
+                    INSERT INTO chats(owner_id, title, public_id, type, description, created_at)
+                    VALUES(?, 'Favorites', ?, 'favorites', 'Personal saved messages', ?)
+                    """,
+                    (str(user_id), public_id, now)
+                )
+
+                chat = await db.execute_async(
+                    "SELECT id FROM chats WHERE public_id = ? AND type = 'favorites' ORDER BY id DESC LIMIT 1",
+                    (public_id,)
+                )
+
+            if chat:
+                chat_id = str(chat[0]["id"])
+                member_exists = await db.execute_async(
+                    "SELECT id FROM chat_members WHERE chat_id = ? AND user_id = ?",
+                    (chat_id, str(user_id))
+                )
+                if not member_exists:
+                    await db.execute_async(
+                        "INSERT INTO chat_members(chat_id, user_id, role, joined_at) VALUES(?, ?, 'owner', ?)",
+                        (chat_id, str(user_id), datetime.utcnow().isoformat())
+                    )
+
         return await AuthLogic.login_user(email, password)
 
     @staticmethod
@@ -62,3 +124,4 @@ class AuthLogic:
 
         db = AutoDB(cm)
         await db.delete_session(id=session_id)
+

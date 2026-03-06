@@ -1,131 +1,308 @@
-import { BACKEND_URL } from '/static/config.js';
 import { openModal, closeModal } from '/static/modal.js';
-import { getChatState } from '/static/chat_state.js'
-import { leaveChat } from '/static/leave_chat.js'
+import { fetchChatData, loadChats } from '/static/load_chats.js';
+import { apiFetchJson, getCurrentUserId } from '/static/api_client.js';
+import { closeChatView, getSelectedChatId, refreshOpenedChat } from '/static/open_chat.js';
 
-document.addEventListener('click', async (e) => {
-    if (e.target.closest('.chat-avatar') || e.target.closest('.chat-title')) {
-        const chatHeader = document.querySelector('.chat-header');
-        const chatId = chatHeader?.dataset.chatId;
+const DEFAULT_AVATAR = '../static/favicon.ico';
 
-        if (!chatId) {
-            console.error('chat_id not found');
-            return;
-        }
-
-        await showChatInfo(chatId);
-    }
-});
-
-async function showChatInfo(chatId) {
-    const chat = getChatState(chatId)
-    const modalContent = createChatInfoHTML(chat);
-    openModal(modalContent);
-    setTimeout(setupModalEventListeners, 0);
-    const modalContentElement = modal.querySelector('.modal-content');
-    const leaveChatBtn = modalContentElement.querySelector("#leaveChatBtn")
-    leaveChatBtn.addEventListener("click", () => {
-        leaveChat(chatId)
-    })
+function escapeHtml(value) {
+    return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
 }
 
-function setupModalEventListeners() {
-    const closeInfoBtn = document.getElementById('closeInfoBtn');
-    if (closeInfoBtn) {
-        closeInfoBtn.removeEventListener('click', closeModal);
-        closeInfoBtn.addEventListener('click', closeModal);
+function formatDate(value) {
+    if (!value) {
+        return 'Unknown';
     }
 
-    const cancelBtn = document.getElementById('cancelModalBtn');
-    if (cancelBtn) {
-        cancelBtn.removeEventListener('click', closeModal);
-        cancelBtn.addEventListener('click', closeModal);
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return 'Unknown';
     }
+
+    return date.toLocaleString('en-US');
 }
 
-function createChatInfoHTML(chat) {
-    const createdAt = chat.created_at ? new Date(chat.created_at).toLocaleString() : 'Неизвестно';
-
-    let chatTypeText = 'Чат';
-    if (chat.type === 'group') {
-        chatTypeText = 'Группа';
-    } else if (chat.type === 'channel') {
-        chatTypeText = 'Канал';
-    } else if (chat.type === 'private') {
-        chatTypeText = 'Личный чат';
+function typeLabel(type) {
+    if (type === 'channel') {
+        return 'Channel';
     }
 
-    const defaultAvatar = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'40\' height=\'40\' viewBox=\'0 0 40 40\'%3E%3Ccircle cx=\'20\' cy=\'20\' r=\'20\' fill=\'%23E0E0E0\'/%3E%3Ctext x=\'20\' y=\'25\' font-size=\'16\' text-anchor=\'middle\' fill=\'%23999\' font-family=\'Arial\'%3E%3F%3C/text%3E%3C/svg%3E';
+    if (type === 'private') {
+        return 'Direct chat';
+    }
+
+    if (type === 'favorites') {
+        return 'Favorites';
+    }
+
+    return 'Group';
+}
+
+function canManageRoles(viewerRole) {
+    return viewerRole === 'owner';
+}
+
+function normalizeModalTitle(chat) {
+    const rawTitle = String(chat?.title || '').trim();
+    const chatType = String(chat?.type || '').toLowerCase();
+
+    if (chatType === 'private') {
+        const noPrefix = rawTitle.replace(/^DM:\s*/i, '').trim();
+        return noPrefix || 'Direct chat';
+    }
+
+    return rawTitle || 'Untitled chat';
+}
+
+function roleControl(member, viewerRole, meId) {
+    const role = member.role || 'member';
+    if (role === 'owner') {
+        return '<span class="member-role-label">owner</span>';
+    }
+
+    if (!canManageRoles(viewerRole)) {
+        return `<span class="member-role-label">${role}</span>`;
+    }
+
+    if (String(member.id) === String(meId) && viewerRole === 'admin') {
+        return `<span class="member-role-label">${role}</span>`;
+    }
 
     return `
-        <div class="modal-header">
-            Информация о чате
-        </div>
-        <div class="modal-body">
-                <div class="chat-info-header">
-                    <img src="${chat.avatar || defaultAvatar}"
-                         alt="avatar"
-                         class="chat-info-avatar">
-                    <div class="title">${chat.title || 'Без названия'}</div>
-                </div>
+        <select class="member-role-select" data-user-id="${member.id}" data-current-role="${role}">
+            <option value="member" ${role === 'member' ? 'selected' : ''}>member</option>
+            <option value="admin" ${role === 'admin' ? 'selected' : ''}>admin</option>
+        </select>
+    `;
+}
 
-                <div class="chat-info-buttons">
-                    <button class="modal-btn leave-chat-btn" id="leaveChatBtn">Покинуть</button>
-                </div>
+function createChatInfoHtml(chat, viewerRole, meId) {
+    const members = Array.isArray(chat.members) ? chat.members : [];
+    const deleteButton = canManageRoles(viewerRole)
+        ? '<button class="modal-btn danger-btn" id="deleteChatBtnInModal">Delete chat</button>'
+        : '';
 
-                <div class="chat-info-details">
-                    ${chat.description ? `
-                    <div class="info-row description">
-                        <span class="info-label">Описание:</span>
-                        <p class="info-value">${chat.description}</p>
-                    </div>
-                    ` : ''}
+    const leaveButton = viewerRole !== 'owner'
+        ? '<button class="modal-btn" id="leaveChatBtn">Leave chat</button>'
+        : '';
 
-                    ${chat.members ? `
-                    <div class="info-row">
-                        <span class="info-label">Участники:</span>
-                        <span class="info-value">${chat.members.length}</span>
-                    </div>
-                    ` : ''}
-                </div>
+    const avatarEditor = canManageRoles(viewerRole)
+        ? `
+            <div class="form-group">
+                <label for="chatAvatarInput">Chat avatar URL</label>
+                <input id="chatAvatarInput" type="text" value="${escapeHtml(chat.avatar || '')}" placeholder="https://..." />
+                <button class="modal-btn" id="saveChatAvatarBtn">Save avatar</button>
+            </div>
+        `
+        : '';
 
-                ${chat.members ? `
-                <div class="chat-info-members">
-                    <div class="members-list">
-                        ${chat.members.map(member => `
-                            <div class="member-item">
-                                <img src="${member.avatar || defaultAvatar}"
-                                     alt="avatar"
-                                     class="member-avatar">
-                                <div class="member-name">${member.first_name} ${member.last_name}</div>
-                                ${member.role ? `<span class="member-role">${member.role}</span>` : ''}
-                            </div>
-                        `).join('')}
-                    </div>
+    const membersHtml = members.map((member) => {
+        const fullNameRaw = `${member.first_name || ''} ${member.last_name || ''}`.trim() || member.email || `User ${member.id}`;
+        const fullName = escapeHtml(fullNameRaw);
+        const email = escapeHtml(member.email || '');
+
+        return `
+            <div class="member-item">
+                <img src="${escapeHtml(member.avatar_url || DEFAULT_AVATAR)}" alt="avatar" class="member-avatar" />
+                <div class="member-main">
+                    <div class="member-name">${fullName}</div>
+                    <div class="member-email">${email}</div>
                 </div>
-                ` : ''}
+                ${roleControl(member, viewerRole, meId)}
+            </div>
+        `;
+    }).join('');
+
+    const title = escapeHtml(normalizeModalTitle(chat));
+    const description = chat.description ? escapeHtml(chat.description) : '';
+
+    return `
+        <div class="modal-header">Chat info</div>
+        <div class="modal-body chat-info-body">
+            <div class="chat-info-header">
+                <img src="${escapeHtml(chat.avatar || DEFAULT_AVATAR)}" alt="avatar" class="chat-info-avatar" />
+                <div class="title">${title}</div>
+            </div>
+
+            <div class="chat-info-details">
+                <div class="info-row"><span class="info-label">Type:</span><span class="info-value">${typeLabel(chat.type)}</span></div>
+                <div class="info-row"><span class="info-label">Your role:</span><span class="info-value">${viewerRole || 'member'}</span></div>
+                <div class="info-row"><span class="info-label">Created:</span><span class="info-value">${formatDate(chat.created_at)}</span></div>
+                <div class="info-row"><span class="info-label">Members:</span><span class="info-value">${members.length}</span></div>
+                ${description ? `<div class="info-row info-description"><span class="info-label">Description:</span><span class="info-value">${description}</span></div>` : ''}
+            </div>
+
+            ${avatarEditor}
+
+            <div class="chat-info-members">
+                <div class="members-title">Members</div>
+                <div class="members-list">
+                    ${membersHtml}
+                </div>
+            </div>
         </div>
         <div class="modal-footer">
-            <button class="modal-btn cancel-btn" id="cancelModalBtn">Ок</button>
+            ${leaveButton}
+            ${deleteButton}
+            <button class="modal-btn" id="closeInfoBtn">Close</button>
         </div>
     `;
 }
 
-export function setChatHeaderInfo(chatId, title, avatar) {
-    const chatHeader = document.querySelector('.chat-header');
-    if (chatHeader) {
-        chatHeader.dataset.chatId = chatId;
+async function reloadModal(chatId) {
+    await showChatInfo(chatId);
+}
 
-        const titleElement = chatHeader.querySelector('.chat-title');
-        if (titleElement) {
-            titleElement.textContent = title || 'Чат';
-        }
+async function handleRoleChange(chatId, selectNode) {
+    const userId = selectNode.dataset.userId;
+    const role = selectNode.value;
 
-        const avatarElement = chatHeader.querySelector('.chat-avatar');
-        if (avatarElement) {
-            const defaultAvatar = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'40\' height=\'40\' viewBox=\'0 0 40 40\'%3E%3Ccircle cx=\'20\' cy=\'20\' r=\'20\' fill=\'%23E0E0E0\'/%3E%3Ctext x=\'20\' y=\'25\' font-size=\'16\' text-anchor=\'middle\' fill=\'%23999\' font-family=\'Arial\'%3E%3F%3C/text%3E%3C/svg%3E';
-            avatarElement.src = avatar || defaultAvatar;
-            avatarElement.onerror = null;
-        }
+    try {
+        await apiFetchJson(`/chats/${chatId}/members/role`, {
+            method: 'POST',
+            body: JSON.stringify({
+                user_id: String(userId),
+                role
+            })
+        });
+
+        await refreshOpenedChat();
+        await reloadModal(chatId);
+    } catch (error) {
+        console.error('Cannot update role:', error);
+        selectNode.value = selectNode.dataset.currentRole || 'member';
+        window.alert(`Cannot update role: ${error.message}`);
     }
 }
+
+async function handleLeaveChat(chatId) {
+    try {
+        await apiFetchJson(`/chats/${chatId}/leave`, { method: 'GET' });
+        closeModal();
+        closeChatView();
+        await loadChats({ forceRefresh: true });
+    } catch (error) {
+        console.error('Cannot leave chat:', error);
+        window.alert(`Cannot leave chat: ${error.message}`);
+    }
+}
+
+async function handleDeleteChat(chatId) {
+    const confirmed = window.confirm('Delete this chat permanently?');
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        await apiFetchJson('/chats/delete', {
+            method: 'POST',
+            body: JSON.stringify({ chat_id: String(chatId) })
+        });
+
+        closeModal();
+        closeChatView();
+        await loadChats({ forceRefresh: true });
+    } catch (error) {
+        console.error('Cannot delete chat:', error);
+        window.alert(`Cannot delete chat: ${error.message}`);
+    }
+}
+
+async function handleSaveAvatar(chatId) {
+    const input = document.getElementById('chatAvatarInput');
+    if (!input) {
+        return;
+    }
+
+    const avatarUrl = input.value.trim();
+    if (!avatarUrl) {
+        return;
+    }
+
+    try {
+        await apiFetchJson(`/chats/${chatId}/avatar`, {
+            method: 'PATCH',
+            body: JSON.stringify({ avatar_url: avatarUrl })
+        });
+
+        await refreshOpenedChat();
+        await loadChats({ forceRefresh: true });
+        await reloadModal(chatId);
+    } catch (error) {
+        console.error('Cannot update chat avatar:', error);
+        window.alert(`Cannot update chat avatar: ${error.message}`);
+    }
+}
+
+function attachModalListeners(chatId) {
+    const closeBtn = document.getElementById('closeInfoBtn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeModal);
+    }
+
+    const leaveBtn = document.getElementById('leaveChatBtn');
+    if (leaveBtn) {
+        leaveBtn.addEventListener('click', async () => {
+            await handleLeaveChat(chatId);
+        });
+    }
+
+    const deleteBtn = document.getElementById('deleteChatBtnInModal');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', async () => {
+            await handleDeleteChat(chatId);
+        });
+    }
+
+    const saveAvatarBtn = document.getElementById('saveChatAvatarBtn');
+    if (saveAvatarBtn) {
+        saveAvatarBtn.addEventListener('click', async () => {
+            await handleSaveAvatar(chatId);
+        });
+    }
+
+    document.querySelectorAll('.member-role-select').forEach((node) => {
+        node.addEventListener('change', async (event) => {
+            const selectNode = event.target;
+            await handleRoleChange(chatId, selectNode);
+        });
+    });
+}
+
+async function showChatInfo(chatId) {
+    try {
+        const [chat, memberInfo, meId] = await Promise.all([
+            fetchChatData(chatId, { forceRefresh: true }),
+            apiFetchJson(`/chats/${chatId}/member`, {
+                method: 'GET',
+                cacheTtlMs: 3000,
+                forceRefresh: true
+            }),
+            getCurrentUserId()
+        ]);
+
+        const html = createChatInfoHtml(chat, memberInfo.role || 'member', meId);
+        openModal(html);
+        attachModalListeners(chatId);
+    } catch (error) {
+        console.error('Cannot open chat info:', error);
+    }
+}
+
+document.addEventListener('click', async (event) => {
+    if (!event.target.closest('.chat-avatar') && !event.target.closest('.chat-title')) {
+        return;
+    }
+
+    const chatId = getSelectedChatId();
+    if (!chatId) {
+        return;
+    }
+
+    await showChatInfo(chatId);
+});

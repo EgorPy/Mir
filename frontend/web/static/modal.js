@@ -43,7 +43,7 @@ export function closeModal() {
     const submitBtn = modal.querySelector('button[type="submit"]');
     if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Создать';
+        submitBtn.textContent = 'Create';
         submitBtn.classList.remove('loading');
     }
 }

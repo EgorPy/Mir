@@ -11,10 +11,9 @@
     <link rel="stylesheet" href="../static/app_header.css">
     <script src="/static/mobile_chat_navigation.js" type="module"></script>
     <script src="/static/load_chats.js" type="module"></script>
-    <script src="/static/create_group.js" type="module"></script>
-    <script src="/static/delete_group.js" type="module"></script>
     <script src="/static/open_chat.js" type="module"></script>
     <script src="/static/is_member.js" type="module"></script>
+    <script src="/static/chat_features_ui.js" type="module"></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,19 +24,13 @@
 <aside class="sidebar" id="sidebar">
     <nav class="sidebar-nav">
         <ul>
-            <li><a href="/profile">Профиль</a></li>
-            <li>
-                <button id="createGroupBtn" class="create-group-btn">Создать группу</button>
-            </li>
-            <li>
-                <button>Создать канал</button>
-            </li>
-            <li>
-                <button>Избранное</button>
-            </li>
-            <li>
-                <button>Настройки</button>
-            </li>
+            <li><a href="/profile">Profile</a></li>
+            <li><button id="createGroupBtn" class="create-group-btn">Create Group</button></li>
+            <li><button id="createChannelBtn">Create Channel</button></li>
+            <li><button id="startDirectBtn">Start Direct Chat</button></li>
+            <li><button id="favoritesBtn">Favorites</button></li>
+            <li><button id="settingsBtn">Settings</button></li>
+            <li><button id="deleteChatBtn">Delete Selected Chat</button></li>
         </ul>
     </nav>
 </aside>
@@ -45,29 +38,7 @@
 <div class="overlay" id="overlay"></div>
 
 <div class="modal" id="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2>Создать группу</h2>
-        </div>
-        <div class="modal-body">
-            <form id="createGroupForm">
-                <div class="form-group">
-                    <input
-                            type="text"
-                            id="groupTitle"
-                            name="title"
-                            placeholder="Введите название группы"
-                            required
-                            autocomplete="off"
-                    >
-                </div>
-            </form>
-        </div>
-        <div class="modal-footer">
-            <button class="modal-btn cancel-btn" id="cancelModalBtn">Отмена</button>
-            <button class="modal-btn create-btn" id="submitGroupBtn">Создать</button>
-        </div>
-    </div>
+    <div class="modal-content"></div>
 </div>
 
 <div class="app-header">
@@ -84,7 +55,7 @@
         <a class="app-name" href="/">Мир</a>
         <input type="text" placeholder="Поиск" id="searchChatPublicId">
     </div>
-    <a class="profile-name" href="/profile">Егор</a>
+    <a class="profile-name" href="/profile">Профиль</a>
     <div class="lens" id="lens">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
             <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
@@ -94,33 +65,51 @@
 
 <div class="chat-section">
     <div class="chats" id="chats">
-        <div id="searchChatsSearching" style="display: none;">Идёт поиск...</div>
-        <div id="searchChatsNotFound" style="display: none;">Чаты не найдены</div>
-        <div class="no-chats-yet" style="display: none;">У вас пока нет чатов, вы можете начать общение с людьми из ваших
-            контактов.
-        </div>
-        <div class="chats-loading">Загрузка...</div>
+        <div id="searchChatsSearching" style="display: none;">Searching...</div>
+        <div id="searchChatsNotFound" style="display: none;">Chats not found</div>
+        <div class="no-chats-yet" style="display: none;">No chats yet.</div>
+        <div class="chats-loading">Loading...</div>
     </div>
     <div class="resizer"></div>
 
     <div class="actual-chat">
         <div class="chat-header" style="display: none;">
             <button class="close-chat-btn">
-                <svg width="24" height="24" viewBox="28 34 16 16" xmlns="http://www.w3.org/2000/svg"
-                     style="transform: rotate(-90deg);">
+                <svg width="24" height="24" viewBox="28 34 16 16" xmlns="http://www.w3.org/2000/svg" style="transform: rotate(-90deg);">
                     <path d="M24 48 L36 36 L48 48 L43.5 48 L36 40.5 L28.5 48 Z" fill="currentColor"/>
                 </svg>
             </button>
             <img src="../static/favicon.ico" alt="avatar" class="chat-avatar">
-            <div class="chat-title">Название чата</div>
+            <div class="chat-title">Chat name</div>
         </div>
-        <div class="select-chat">Выберите чат для начала общения.</div>
+
+        <div class="select-chat">Select a chat to start.</div>
+
+        <div class="message-actions" style="display: none;">
+            <div class="message-actions-count">0 selected</div>
+            <button class="message-action-clear">Clear</button>
+            <button class="message-action-favorite">Favorite</button>
+            <button class="message-action-forward">Forward</button>
+            <button class="message-action-delete">Delete</button>
+        </div>
+
         <div class="messages-container"></div>
-        <div class="no-messages-yet">Здесь ещё нет сообщений</div>
-        <div class="join-chat">Присоединиться</div>
+        <div class="no-messages-yet">No messages yet</div>
+        <div class="join-chat">Join</div>
+
         <div class="chat-input" style="display: none;">
-            <input type="text" class="message-input" placeholder="Введите сообщение..." autocomplete="off"/>
-            <button class="send-message-btn">
+            <select class="message-type-select" title="Message type">
+                <option value="text">Text</option>
+                <option value="photo">Photo</option>
+                <option value="video">Video</option>
+                <option value="gif">GIF</option>
+                <option value="voice">Voice</option>
+                <option value="music">Music</option>
+                <option value="file">File</option>
+            </select>
+            <input type="text" class="message-media-input" placeholder="Media URL" style="display: none;" autocomplete="off"/>
+            <input type="text" class="message-input" placeholder="Type a message..." autocomplete="off"/>
+            <button class="send-message-btn" title="Send">
                 <svg width="24" height="24" viewBox="28 34 16 16" xmlns="http://www.w3.org/2000/svg">
                     <path d="M24 48 L36 36 L48 48 L43.5 48 L36 40.5 L28.5 48 Z" fill="currentColor"/>
                 </svg>
@@ -138,3 +127,5 @@
 <script src="/static/check_auth.js" type="module"></script>
 </body>
 </html>
+
+

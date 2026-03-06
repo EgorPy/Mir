@@ -1,9 +1,14 @@
-export async function isMember(chatId) {
-    const response = await fetch(`${window.BACKEND_URL}/chats/${chatId}/member`, {
-        credentials: "include"
-    })
+import { apiFetchJson } from '/static/api_client.js';
 
-    if (!response.ok) return
-    const result = await response.json()
-    return result.is_member
+export async function isMember(chatId) {
+    try {
+        const result = await apiFetchJson(`/chats/${chatId}/member`, {
+            method: 'GET',
+            cacheTtlMs: 3000
+        });
+
+        return Boolean(result?.is_member);
+    } catch {
+        return false;
+    }
 }
