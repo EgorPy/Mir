@@ -1,8 +1,7 @@
-from core.method_generator import DBField
-from pydantic import BaseModel
+from core.method_generator import DBField, Schema
 
 
-class Sessions(BaseModel):
+class Sessions(Schema):
     __tablename__ = "sessions"
 
     id: str = DBField(primary_key=True)
@@ -11,7 +10,7 @@ class Sessions(BaseModel):
     expires_at: str
 
 
-class Users(BaseModel):
+class Users(Schema):
     __tablename__ = "users"
 
     id: int = DBField(primary_key=True, autoincrement=True)

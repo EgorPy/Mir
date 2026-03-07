@@ -13,4 +13,4 @@ export default `
             <span class="message-read"></span>
         </div>
     </div>
-</div>`;
+</div>`

@@ -57,6 +57,10 @@ def DBField(
     )
 
 
+class Schema(BaseModel):
+    pass
+
+
 class ConnectionManager:
     """
     Database connection manager using thread-local connections.

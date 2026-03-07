@@ -1,8 +1,7 @@
-from core.method_generator import DBField
-from pydantic import BaseModel
+from core.method_generator import DBField, Schema
 
 
-class ChatMembers(BaseModel):
+class ChatMembers(Schema):
     __tablename__ = "chat_members"
 
     id: int = DBField(primary_key=True, autoincrement=True)
@@ -12,7 +11,7 @@ class ChatMembers(BaseModel):
     joined_at: str
 
 
-class Chats(BaseModel):
+class Chats(Schema):
     __tablename__ = "chats"
 
     id: int = DBField(primary_key=True, autoincrement=True)
@@ -25,7 +24,7 @@ class Chats(BaseModel):
     avatar_url: str | None = None
 
 
-class Messages(BaseModel):
+class Messages(Schema):
     __tablename__ = "messages"
 
     id: int = DBField(primary_key=True, autoincrement=True)

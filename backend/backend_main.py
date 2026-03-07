@@ -1,9 +1,11 @@
 """ Backend API """
 
-import sys, os
+import sys
+import os
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # do not move down
 
+from core.method_generator import AutoDB, Schema, cm
 from core.config import config
 from core.logger import logger
 
@@ -15,6 +17,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 import uvicorn
 import logging
+import inspect
+import pkgutil
+import importlib
 
 import traceback
 import sys
@@ -45,6 +50,27 @@ app.include_router(auth_router, prefix="/auth", tags=["Auth"])
 app.include_router(chats_router, prefix="/chats", tags=["Chats"])
 
 
+def get_schema_files():
+    schemas_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../backend/services"))
+    logger.info(f"Looking for schema files in: {schemas_path}")
+    return pkgutil.iter_modules([schemas_path])
+
+
+def ensure_schema(skip: bool = False):
+    schema_files = get_schema_files()
+    db = AutoDB(cm)
+
+    for schema_file in schema_files:
+        module = importlib.import_module(f"backend.services.{schema_file.name}.schema")
+        logger.info(f"Loaded service: {schema_file.name}")
+        models = inspect.getmembers(module, inspect.isclass)
+        for raw_model in models:
+            model = raw_model[1]
+            if issubclass(model, Schema) and model != Schema:
+                db.create_table_from_model(model)
+        print()
+
+
 def start_server():
     """ Starts the server """
 
@@ -64,6 +90,7 @@ def run():
     logger = logging.getLogger("core")
     logger.setLevel(logging.DEBUG)
 
+    ensure_schema()
     start_server()
 
     # server_thread = threading.Thread(target=start_server, daemon=True)

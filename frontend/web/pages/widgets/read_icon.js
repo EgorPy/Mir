@@ -1,0 +1,6 @@
+export default `
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter">
+  <polyline points="4 12 10 18 20 6"/>
+  <polyline points="4 16 10 22 20 10"/>
+</svg>
+`
