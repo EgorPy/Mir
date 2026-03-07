@@ -163,3 +163,13 @@ async def get_me(user_id: int = Depends(check_user_session)):
     """ Check if a user is logged in endpoint """
 
     return {"user_id": user_id}
+
+
+@router.get("/name")
+async def get_name(user_id: int = Depends(check_user_session),
+                   connection_manager: ConnectionManager = Depends(cm.dependency)):
+    db = AutoDB(connection_manager)
+    result = await db.get_users(id=user_id)
+    if not result:
+        return {"ok": False, "result": result}
+    return {"ok": True, "name": result[0].get("first_name")}

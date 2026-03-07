@@ -1,14 +1,21 @@
-""" Database generating methods """
-
-from core.logger import logger
+""" Database generating methods with schema support """
 
 from fastapi.concurrency import run_in_threadpool
+from pydantic import BaseModel, Field
+from typing import Any, Dict, Type
 from functools import wraps
 import threading
-import inspect
+import logging
 import sqlite3
-import re
-import os
+
+logger = logging.getLogger(__name__)
+
+SQL_TYPES = {
+    int: "INTEGER",
+    str: "TEXT",
+    float: "REAL",
+    bool: "INTEGER",
+}
 
 
 def async_db_method(func):
@@ -16,698 +23,198 @@ def async_db_method(func):
 
     @wraps(func)
     async def wrapper(*args, **kwargs):
-        # args[0] - это self (экземпляр AutoDB)
-        # Остальные args и kwargs - параметры метода
         return await run_in_threadpool(func, *args, **kwargs)
 
     return wrapper
 
 
-class ConnectionManager:
-    """ Database connection manager for FastAPI with thread-local storage """
+def DBField(
+        *,
+        primary_key: bool = False,
+        autoincrement: bool = False,
+        unique: bool = False,
+        index: bool = False,
+        default=None,
+):
+    """
+    Wrapper around Pydantic Field for describing database columns.
 
-    def __init__(self, path="database.db"):
+    Args:
+        primary_key: Marks column as PRIMARY KEY
+        autoincrement: Enables AUTOINCREMENT
+        unique: Adds UNIQUE constraint
+        index: Creates SQL index
+        default: Default value
+    """
+
+    return Field(
+        default=default,
+        json_schema_extra={
+            "primary_key": primary_key,
+            "autoincrement": autoincrement,
+            "unique": unique,
+            "index": index,
+        },
+    )
+
+
+class ConnectionManager:
+    """
+    Database connection manager using thread-local connections.
+
+    Each worker thread receives its own SQLite connection.
+    """
+
+    def __init__(self, path: str = "database.db"):
         self.path = path
         self.local = threading.local()
 
     def get_connection(self) -> sqlite3.Connection:
-        """ Get or create thread-local connection """
-        if not hasattr(self.local, 'connection'):
-            thread_id = threading.get_ident()
-            logger.debug(f"Creating new connection in thread {thread_id}")
+        """ Returns thread-local connection or creates a new one. """
+
+        if not hasattr(self.local, "connection"):
+            logger.debug("Creating new SQLite connection")
             conn = sqlite3.connect(self.path)
             conn.row_factory = sqlite3.Row
             self.local.connection = conn
+
         return self.local.connection
 
-    def close_connection(self):
-        """ Close thread-local connection if it exists """
-        if hasattr(self.local, 'connection'):
-            thread_id = threading.get_ident()
-            logger.debug(f"Closing connection in thread {thread_id}")
-            self.local.connection.close()
-            delattr(self.local, 'connection')
 
-    def dependency(self):
-        """ Generator that yields connection manager (not connection itself) """
-        try:
-            yield self
-        finally:
-            # Не закрываем соединение здесь - оно будет жить пока жив поток
-            pass
-
-
-def _guess_table_from_method(name: str) -> str:
-    """ Guesses table name from method name like get_image_by_id or set_image_by_user_id -> images """
-
-    match = re.match(r"(?:get|set|insert|delete)_(\w+)_by_", name)
-    if match:
-        table = match.group(1)
-        if not table.endswith("s"):
-            table += "s"
-        return table
-
-    match = re.match(r"(?:get|set|insert|delete)_(\w+)$", name)
-    if match:
-        table = match.group(1)
-        if not table.endswith("s"):
-            table += "s"
-        return table
-    raise AttributeError(f"Cannot guess table name. Incorrect method name: {name}")
-
-
-def _log_call_context(method_name: str):
-    """ Log method name, line and file """
-
-    frame = inspect.stack()[2]  # calling method
-    filename = os.path.basename(frame.filename)
-    lineno = frame.lineno
-    func = frame.function
-
-    logger.debug(f"Generated method '{method_name}' called from {filename}:{lineno} in {func}()")
+def _table_name(model: Type[BaseModel]) -> str:
+    return model.__name__.lower()
 
 
 class AutoDB:
     """
-    Database with auto-generated methods and logging
-    Method-Driven Data Modeling (MDDM)
+    Database with auto-generated methods and logging.
+    Method-Driven Data Modeling (MDDM).
+
+    Universal database access layer.
+
+    - schema-based table generation
+    - thread-local connections
+    - async CRUD methods
+    - automatic SQL generation
     """
 
-    OPERATION_KEYWORDS = {"get", "set", "update", "delete"}
-    STATUS_KEYWORDS = {"uploaded", "pending", "processing", "waiting", "done", "error"}
-    QUERY_KEYWORDS = {"with", "by"}
-
     def __init__(self, connection_manager: ConnectionManager):
-        """
-        Initialize with ConnectionManager instead of direct connection
+        self.cm = connection_manager
 
-        Args:
-            connection_manager: ConnectionManager instance
-        """
-        self.connection_manager = connection_manager
-        logger.debug("AutoDB initialized with connection manager")
+    def _get_connection(self) -> sqlite3.Connection:
+        """ Returns thread-local connection """
 
-    def _get_connection(self):
-        """ Get thread-local connection """
-        return self.connection_manager.get_connection()
+        return self.cm.get_connection()
 
     def _get_cursor(self):
-        """ Get cursor from thread-local connection """
         return self._get_connection().cursor()
 
-    def __getattr__(self, name: str):
-        """ Dynamically create method based on its name """
-
-        if name.startswith("set_"):
-            for parser in (
-                    self._parse_set_status_method,
-                    self._parse_set_with_status_table,
-                    self._parse_set_by_two_columns,
-                    self._parse_set_by_column,
-            ):
-                method = parser(name)
-                if method:
-                    # Привязываем метод к экземпляру
-                    bound_method = method.__get__(self, AutoDB)
-                    return async_db_method(bound_method)
-
-        if name.startswith("get_"):
-            for parser in (
-                    self._parse_get_with_status_table,
-                    self._parse_get_by_column,
-                    self._parse_get_column_from_table,
-                    self._parse_get_table,
-            ):
-                method = parser(name)
-                if method:
-                    bound_method = method.__get__(self, AutoDB)
-                    return async_db_method(bound_method)
-
-        if name.startswith("is_"):
-            for parser in (
-                    self._parse_is_exists,
-            ):
-                method = parser(name)
-                if method:
-                    bound_method = method.__get__(self, AutoDB)
-                    return async_db_method(bound_method)
-
-        if name.startswith("insert_"):
-            for parser in (
-                    self._parse_insert_row,
-            ):
-                method = parser(name)
-                if method:
-                    bound_method = method.__get__(self, AutoDB)
-                    return async_db_method(bound_method)
-
-        if name.startswith("delete_"):
-            for parser in (
-                    self._parse_delete_row,
-            ):
-                method = parser(name)
-                if method:
-                    bound_method = method.__get__(self, AutoDB)
-                    return async_db_method(bound_method)
-
-        raise AttributeError(f"Unknown method format: {name}")
-
-    # ------------------ Parsers ------------------
-    def _parse_get_with_status_table(self, name: str):
-        """ get_{column}_with_{status}_{table}() or get_{column}_and_{column}_with_{status}_{table}() """
-
-        match = re.match(r"^(get|set|update|delete)_(.+)_with_(\w+)_(\w+)$", name)
-        if not match:
-            return None
-
-        operation, columns_part, status, table = match.groups()
-        if operation not in self.OPERATION_KEYWORDS or status not in self.STATUS_KEYWORDS:
-            return None
-
-        columns = columns_part.split("_and_")
-        query = f"SELECT {', '.join(columns)} FROM {table} WHERE status = ?"
-        _log_call_context(name)
-        logger.debug(f"Prepared SQL query: {query} | Status: {status}")
-
-        def method(self):
-            """ Returns column(s) with specific status """
-            _log_call_context(name)
-            conn = self._get_connection()
-            cursor = conn.cursor()
-
-            self._ensure_table_and_columns(table, columns + ["status"])
-            logger.debug(f"Executing query with status={status}")
-
-            cursor.execute(query, (status,))
-            result = cursor.fetchall()
-
-            logger.info(f"Returned {len(result)} rows for columns: {columns}")
-            return [dict(row) for row in result]
-
-        return method
-
-    def _parse_get_by_column(self, name: str):
-        """ get_{column}_by_{column}(value) """
-
-        match = re.match(r"^(get|set|update|delete)_(\w+)_by_(\w+)$", name)
-        if not match:
-            return None
-
-        operation, column, by_column = match.groups()
-        if operation not in self.OPERATION_KEYWORDS:
-            return None
-
-        table = _guess_table_from_method(name)
-        query = f"SELECT {column} FROM {table} WHERE {by_column} = ?"
-        _log_call_context(name)
-        logger.debug(f"Prepared SQL query: {query}")
-
-        def method(self, value):
-            """ Returns column selected by another column """
-            _log_call_context(name)
-            conn = self._get_connection()
-            cursor = conn.cursor()
-
-            self._ensure_table_and_columns(table, [column, by_column])
-            logger.debug(f"Executing query with {by_column}={value}")
-
-            cursor.execute(query, (value,))
-            result = cursor.fetchall()
-
-            logger.info(f"Returned {len(result)} rows for column: {column}")
-            return [dict(row) for row in result]
-
-        return method
-
-    def _parse_get_column_from_table(self, name: str):
-        """ get_{column}_from_{table}(columns_as_keyword_arguments) """
-
-        match = re.match(r"^get_(\w+)_from_(\w+)$", name)
-        if not match:
-            return None
-
-        return_column, table = match.groups()
-
-        def method(self, **columns):
-            """ Returns column selected by columns """
-
-            _log_call_context(name)
-            conn = self._get_connection()
-            cursor = conn.cursor()
-
-            if not columns:
-                raise ValueError(f"{name} must be called with keyword arguments for WHERE columns")
-
-            where_columns = list(columns.keys())
-            self._ensure_table_and_columns(table, [return_column] + where_columns)
-
-            where_clause = " AND ".join(f"{col} = ?" for col in where_columns)
-            query = f"SELECT {return_column} FROM {table} WHERE {where_clause}"
-
-            logger.debug(query)
-
-            values = tuple(columns[col] for col in where_columns)
-
-            cursor.execute(query, values)
-            rows = cursor.fetchall()
-
-            if not rows:
-                return None
-            return rows[0][return_column]
-
-        return method
-
-    def _parse_get_table(self, name: str):
-        """ get_{table_name}(columns_as_keyword_arguments) """
-
-        match = re.match(r"^get_(\w+)$", name)
-        if not match:
-            return None
-
-        table = match.group(1)
-
-        def method(self, **columns):
-            conn = self._get_connection()
-            cursor = conn.cursor()
-
-            self._ensure_table_and_columns(table, list(columns.keys()))
-
-            query = f"SELECT * FROM {table}"
-            params = []
-
-            if columns:
-                where_clause = " AND ".join(f"{col}=?" for col in columns)
-                query += f" WHERE {where_clause}"
-                params = list(columns.values())
-
-            cursor.execute(query, tuple(params))
-            rows = cursor.fetchall()
-
-            cursor.execute(f"PRAGMA table_info({table})")
-            columns = [row[1] for row in cursor.fetchall()]
-
-            return [dict(zip(columns, row)) for row in rows]
-
-        return method
-
-    def _parse_set_with_status_table(self, name: str):
-        """ set_{column}_with_{status}_{table}() or set_{column}_and_{column}_with_{status}_{table}() """
-
-        match = re.match(r"^set_(.+)_with_(\w+)_(\w+)$", name)
-        if not match:
-            return None
-
-        columns_part, status, table = match.groups()
-        columns = columns_part.split("_and_")
-        placeholders = ", ".join([f"{col}=?" for col in columns])
-        query = f"UPDATE {table} SET {placeholders} WHERE status = ?"
-        _log_call_context(name)
-        logger.debug(f"Prepared SQL SET query: {query} | Status: {status}")
-
-        def method(self, *values):
-            """ Sets columns with status """
-
-            _log_call_context(name)
-            conn = self._get_connection()
-            cursor = conn.cursor()
-
-            if len(values) != len(columns):
-                raise ValueError(f"Expected {len(columns)} values, got {len(values)}")
-
-            self._ensure_table_and_columns(table, columns + ["status"])
-
-            cursor.execute(query, (*values, status))
-            conn.commit()
-
-            cursor.execute(f"SELECT * FROM {table} WHERE status = ?", (status,))
-            rows = cursor.fetchall()
-
-            cursor.execute(f"PRAGMA table_info({table})")
-            col_names = [row[1] for row in cursor.fetchall()]
-
-            return [dict(zip(col_names, row)) for row in rows]
-
-        return method
-
-    def _parse_set_by_two_columns(self, name: str):
-        """ set_{column}_by_{column}_and_{column}(value, filter1, filter2) """
-
-        match = re.match(r"^set_(\w+)_by_(\w+)_and_(\w+)$", name)
-        if not match:
-            return None
-
-        column, filter1, filter2 = match.groups()
-        table = _guess_table_from_method(name)
-        query = f"UPDATE {table} SET {column} = ? WHERE {filter1} = ? AND {filter2}=?"
-        _log_call_context(name)
-        logger.debug(f"Prepared SQL query: {query}")
-
-        def method(self, value_to_set, filter1_value, filter2_value):
-            """ Sets columns with two filters """
-            _log_call_context(name)
-            conn = self._get_connection()
-            cursor = conn.cursor()
-
-            self._ensure_table_and_columns(table, [column, filter1, filter2])
-
-            cursor.execute(query, (value_to_set, filter1_value, filter2_value))
-            conn.commit()
-
-            cursor.execute(f"SELECT * FROM {table} WHERE {filter1}=? AND {filter2}=?",
-                           (filter1_value, filter2_value))
-            rows = cursor.fetchall()
-
-            cursor.execute(f"PRAGMA table_info({table})")
-            columns = [row[1] for row in cursor.fetchall()]
-
-            return [dict(zip(columns, row)) for row in rows]
-
-        return method
-
-    def _parse_set_by_column(self, name: str):
-        """ set_{column}_by_{column}(value, filter) """
-
-        match = re.match(r"^set_(\w+)_by_(\w+)$", name)
-        if not match:
-            return None
-
-        column, by_column = match.groups()
-        table = _guess_table_from_method(name)
-
-        if column.endswith("_status"):
-            column = column.removesuffix("_status")
-
-        if by_column.endswith("_status"):
-            by_column = by_column.removesuffix("_status")
-
-        if table.endswith("_status"):
-            table = table.removesuffix("_status")
-            if not table.endswith("s"):
-                table += "s"
-            query = f"UPDATE {table} SET status=? WHERE {by_column}=?"
-        else:
-            if not table.endswith("s"):
-                table += "s"
-            query = f"UPDATE {table} SET {column}=? WHERE {by_column}=?"
-
-        _log_call_context(name)
-        logger.debug(f"Prepared SQL query: {query}")
-
-        def method(self, value_to_set, filter_value):
-            """ Sets columns with filter """
-            _log_call_context(name)
-            conn = self._get_connection()
-            cursor = conn.cursor()
-
-            self._ensure_table_and_columns(table, [column, by_column, "status"])
-
-            cursor.execute(query, (value_to_set, filter_value))
-            conn.commit()
-
-            cursor.execute(f"SELECT * FROM {table} WHERE {by_column}=?", (filter_value,))
-            rows = cursor.fetchall()
-
-            cursor.execute(f"PRAGMA table_info({table})")
-            columns = [row[1] for row in cursor.fetchall()]
-
-            return [dict(zip(columns, row)) for row in rows]
-
-        return method
-
-    def _parse_set_status_method(self, name: str):
-        """ Parses methods like set_{table}_status(arg1, status) """
-
-        match = re.fullmatch(r"set_(\w+)_status", name)
-        if not match:
-            return None
-
-        table = match.group(1)
-        if not table.endswith("s"):
-            table += "s"
-
-        query = f"UPDATE {table} SET status=? WHERE id=?"
-        _log_call_context(name)
-        logger.debug(f"Prepared SQL query: {query}")
-
-        def method(self, id_value, status_value):
-            """ Set status method """
-            _log_call_context(name)
-            conn = self._get_connection()
-            cursor = conn.cursor()
-
-            self._ensure_table_and_columns(table, ["status"])
-
-            cursor.execute(query, (status_value, id_value))
-            conn.commit()
-
-            cursor.execute(f"SELECT * FROM {table} WHERE id=?", (id_value,))
-            rows = cursor.fetchall()
-
-            cursor.execute(f"PRAGMA table_info({table})")
-            columns = [row[1] for row in cursor.fetchall()]
-
-            return [dict(zip(columns, row)) for row in rows]
-
-        return method
-
-    def _parse_is_exists(self, name: str):
-        """ Parses methods like is_{table}_exists(arg1) """
-
-        match = re.fullmatch(r"is_(\w+)_exists", name)
-        if not match:
-            return None
-
-        table = match.group(1)
-        if not table.endswith("s"):
-            table += "s"
-
-        _log_call_context(name)
-        logger.debug(f"Prepared SQL query template for exists check")
-
-        def method(self, **where_columns):
-            """ Check if record exists """
-            _log_call_context(name)
-            conn = self._get_connection()
-            cursor = conn.cursor()
-
-            self._ensure_table_and_columns(table, list(where_columns.keys()))
-
-            where_clause = " AND ".join(f"{col} = ?" for col in where_columns)
-            query = f"SELECT COUNT(*) as count FROM {table} WHERE {where_clause}"
-
-            cursor.execute(query, (*where_columns.values(),))
-            result = cursor.fetchall()
-
-            return bool(result[0][0]) if result and result[0] else False
-
-        return method
-
-    def _parse_insert_row(self, name: str):
-        """ insert_{table_row}(columns_as_keyword_arguments) """
-
-        table = _guess_table_from_method(name)
-        _log_call_context(name)
-        logger.debug(f"Prepared SQL query template for insert")
-
-        def method(self, **columns):
-            """ Insert row with columns """
-
-            _log_call_context(name)
-            conn = self._get_connection()
-            cursor = conn.cursor()
-
-            self._ensure_table_and_columns(table, list(columns.keys()))
-
-            columns_names = ', '.join(columns.keys())
-            placeholders = ', '.join(['?'] * len(columns))
-            query = f"INSERT INTO {table} ({columns_names}) VALUES ({placeholders})"
-
-            logger.debug(f"Executing query: {query} with values: {tuple(columns.values())}")
-
-            cursor.execute(query, (*columns.values(),))
-            conn.commit()
-
-            # Get inserted row
-            where_clause = " AND ".join(f"{col} = ?" for col in columns.keys())
-            cursor.execute(f"SELECT * FROM {table} WHERE {where_clause}", (*columns.values(),))
-            rows = cursor.fetchall()
-
-            cursor.execute(f"PRAGMA table_info({table})")
-            column_names = [row[1] for row in cursor.fetchall()]
-
-            result = [dict(zip(column_names, row)) for row in rows]
-            logger.debug(f"Insert result: {result}")
-
-            return result
-
-        return method
-
-    def _parse_delete_row(self, name: str):
-        """ delete_{table_row}(columns_as_keyword_arguments) """
-
-        table = _guess_table_from_method(name)
-        _log_call_context(name)
-        logger.debug(f"Prepared SQL query template for delete")
-
-        def method(self, **columns):
-            """ Delete row with columns """
-
-            _log_call_context(name)
-            conn = self._get_connection()
-            cursor = conn.cursor()
-
-            self._ensure_table_and_columns(table, list(columns.keys()))
-
-            where_clause = " AND ".join(f"{col} = ?" for col in columns)
-            query = f"DELETE FROM {table} WHERE {where_clause}"
-
-            cursor.execute(query, (*columns.values(),))
-            conn.commit()
-
-            return cursor.rowcount
-
-        return method
-
-    # ------------------ Utilities ------------------
-    def _ensure_table_and_columns(self, table: str, columns: list):
-        """ Checks if table and columns exist and creates them if not """
-
-        conn = self._get_connection()
-        cursor = conn.cursor()
-
-        cursor.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name = ?", (table,)
-        )
-        if not cursor.fetchone():
-            logger.warning(f"Table '{table}' does not exist. Creating...")
-            self._create_table(table)
-
-        cursor.execute(f"PRAGMA table_info({table})")
-        existing = {row[1] for row in cursor.fetchall()}
-
-        for column in columns:
-            if column not in existing:
-                logger.warning(f"Column '{column}' does not exist in '{table}'. Creating...")
-                sql = f"ALTER TABLE {table} ADD COLUMN {column} TEXT"
-                logger.debug(f"Executing SQL: {sql}")
-                cursor.execute(sql)
-
-    def _create_table(self, table: str):
-        """ Creates a table with just an id column """
-
-        conn = self._get_connection()
-        cursor = conn.cursor()
-        sql = f"CREATE TABLE {table} (id INTEGER PRIMARY KEY AUTOINCREMENT)"
-        logger.debug(f"Creating table '{table}' with SQL: {sql}")
-        cursor.execute(sql)
-
-    def create_column_if_not_exists(self, table_name: str, column_name: str, column_type: str = "TEXT") -> None:
-        """ Create column if it doesn't exist """
-
-        conn = self._get_connection()
-        cursor = conn.cursor()
-
-        cursor.execute(f"PRAGMA table_info({table_name})")
-        existing_columns = {row[1] for row in cursor.fetchall()}
-
-        if column_name not in existing_columns:
-            cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}")
-            conn.commit()
-
-    def create_table_if_not_exists(self, table_name: str) -> None:
-        """ Create table if it doesn't exist """
-
-        conn = self._get_connection()
-        cursor = conn.cursor()
-
-        cursor.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name = ?",
-            (table_name,)
-        )
-
-        if not cursor.fetchone():
-            cursor.execute(f"""
-                CREATE TABLE {table_name} (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT
-                )
-            """)
-            conn.commit()
-
-    def execute(self, sql: str, params=None):
-        """ Execute a custom SQL query with optional parameters """
-
-        conn = self._get_connection()
-        cursor = conn.cursor()
-
-        sql_lower = sql.lower()
-        tables = set()
-
-        patterns = [
-            r'from\s+(\w+)',
-            r'join\s+(\w+)',
-            r'insert\s+into\s+(\w+)',
-            r'update\s+(\w+)',
-            r'delete\s+from\s+(\w+)',
-            r'table\s+(\w+)'
-        ]
-
-        for pattern in patterns:
-            tables.update(re.findall(pattern, sql_lower))
-
-        keywords = {'select', 'where', 'set', 'values', 'as', 'on', 'and', 'or'}
-        tables = {t for t in tables if t not in keywords}
-
-        for table in tables:
-            cursor.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name = ?",
-                (table,)
-            )
-            if not cursor.fetchone():
-                cursor.execute(f"""
-                    CREATE TABLE {table} (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT
-                    )
-                """)
-
-        for table in tables:
-            cursor.execute(f"PRAGMA table_info({table})")
-            existing = {row[1] for row in cursor.fetchall()}
-
-            columns_to_check = set()
-
-            select_match = re.search(r'select\s+(.+?)\s+from', sql_lower)
-            if select_match and select_match.group(1) != '*':
-                cols = [c.strip().split()[-1] for c in select_match.group(1).split(',')]
-                columns_to_check.update(cols)
-
-            columns_to_check.update(re.findall(r'where\s+(\w+)\s*[=<>!]', sql_lower))
-            columns_to_check.update(re.findall(r'set\s+(\w+)\s*=', sql_lower))
-
-            insert_match = re.search(r'insert\s+into\s+\w+\s*\((.+?)\)', sql_lower)
-            if insert_match:
-                cols = [c.strip() for c in insert_match.group(1).split(',')]
-                columns_to_check.update(cols)
-
-            for col in columns_to_check:
-                if col not in existing and col not in ['id', '*'] and '(' not in col:
-                    try:
-                        cursor.execute(f"ALTER TABLE {table} ADD COLUMN {col} TEXT")
-                    except Exception:
-                        pass
-
-        if params:
-            cursor.execute(sql, params)
-        else:
-            cursor.execute(sql)
-
-        if sql_lower.strip().startswith('select'):
-            return [dict(row) for row in cursor.fetchall()]
+    def create_table_from_model(self, model: Type[BaseModel]):
+        """ Creates a table from a Pydantic model schema """
+
+        table = _table_name(model)
+
+        columns = []
+        indexes = []
+
+        for name, field in model.model_fields.items():
+            annotation = field.annotation
+            sql_type = SQL_TYPES.get(annotation, "TEXT")
+
+            column_sql = f"{name} {sql_type}"
+            extra = field.json_schema_extra or {}
+            if extra.get("primary_key"):
+                column_sql += " PRIMARY KEY"
+            if extra.get("autoincrement"):
+                column_sql += " AUTOINCREMENT"
+            if extra.get("unique"):
+                column_sql += " UNIQUE"
+            if extra.get("index"):
+                indexes.append(name)
+            columns.append(column_sql)
+
+        columns_sql = ", ".join(columns)
+        create_sql = f"CREATE TABLE IF NOT EXISTS {table} ({columns_sql})"
+        logger.debug("Creating table %s", table)
+        cursor = self._get_cursor()
+        cursor.execute(create_sql)
+        for column in indexes:
+            logger.debug("Creating index for %s.%s", table, column)
+            cursor.execute(f"CREATE INDEX IF NOT EXISTS idx_{table}_{column} ON {table}({column})")
+        self._get_connection().commit()
+
+    def insert(self, model: Type[BaseModel], **values):
+        table = _table_name(model)
+        columns = ", ".join(values.keys())
+        placeholders = ", ".join("?" for _ in values)
+        sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
+        logger.debug("INSERT INTO %s VALUES = %s", table, values)
+        cursor = self._get_cursor()
+        cursor.execute(sql, tuple(values.values()))
+        self._get_connection().commit()
+        return cursor.lastrowid
+
+    def select(self, model: Type[BaseModel], where: Dict[str, Any] | None = None):
+        table = _table_name(model)
+        sql = f"SELECT * FROM {table}"
+        params = []
+        if where:
+            clause = " AND ".join(f"{k} = ?" for k in where)
+            sql += f" WHERE {clause}"
+            params = list(where.values())
+        logger.debug("SELECT FROM %s WHERE = %s", table, where)
+        cursor = self._get_cursor()
+        cursor.execute(sql, params)
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
+
+    def select_one(self, model: Type[BaseModel], **where):
+        rows = self.select(model, where)
+        if rows:
+            return rows[0]
+        return None
+
+    def update(self, model: Type[BaseModel], values: Dict[str, Any], where: Dict[str, Any]):
+        table = _table_name(model)
+        set_clause = ", ".join(f"{k} = ?" for k in values)
+        where_clause = " AND ".join(f"{k} = ?" for k in where)
+        sql = f"UPDATE {table} SET {set_clause} WHERE {where_clause}"
+        params = list(values.values()) + list(where.values())
+        logger.debug("UPDATE %s VALUES = %s WHERE = %s", table, values, where)
+        cursor = self._get_cursor()
+        cursor.execute(sql, params)
+        self._get_connection().commit()
         return cursor.rowcount
 
-    async def execute_async(self, sql: str, params=None):
-        """ Async version of execute """
+    def delete(self, model: Type[BaseModel], **where):
+        table = _table_name(model)
+        clause = " AND ".join(f"{k} = ?" for k in where)
+        sql = f"DELETE FROM {table} WHERE {clause}"
+        logger.debug("DELETE FROM %s WHERE = %s", table, where)
+        cursor = self._get_cursor()
+        cursor.execute(sql, list(where.values()))
+        self._get_connection().commit()
+        return cursor.rowcount
 
-        return await run_in_threadpool(self.execute, sql, params)
+    @async_db_method
+    def insert_async(self, model: Type[BaseModel], **values):
+        return self.insert(model, **values)
+
+    @async_db_method
+    def select_async(self, model: Type[BaseModel], where: Dict[str, Any] | None = None):
+        return self.select(model, where)
+
+    @async_db_method
+    def select_one_async(self, model: Type[BaseModel], **where):
+        return self.select_one(model, **where)
+
+    @async_db_method
+    def update_async(self, model: Type[BaseModel], values: Dict[str, Any], where: Dict[str, Any], ):
+        return self.update(model, values, where)
+
+    @async_db_method
+    def delete_async(self, model: Type[BaseModel], **where):
+        return self.delete(model, **where)
 
 
 cm = ConnectionManager()

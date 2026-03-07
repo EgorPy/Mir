@@ -361,6 +361,8 @@
 
 .modal-btn {
     padding: 10px 20px;
+    margin: 0.5rem;
+    min-width: 15vw;
     border: none;
     border-radius: 6px;
     font-size: 1rem;

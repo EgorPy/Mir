@@ -1,6 +1,7 @@
 const burgerBtn = document.getElementById('burgerBtn');
 const sidebar = document.getElementById('sidebar');
 const overlay = document.getElementById('overlay');
+const profileName = document.getElementById("profileName")
 
 function toggleSidebar() {
     sidebar.classList.toggle('active');
@@ -19,8 +20,15 @@ function closeSidebar() {
     document.body.style.overflow = '';
 }
 
-burgerBtn.addEventListener('click', toggleSidebar);
+async function loadName() {
+    const response = await fetch(`${window.BACKEND_URL}/auth/name`, {
+        credentials: "include"
+    })
+    const result = await response.json()
+    profileName.textContent = result.name
+}
 
+burgerBtn.addEventListener('click', toggleSidebar);
 overlay.addEventListener('click', closeSidebar);
 
 document.addEventListener('keydown', (e) => {
@@ -33,3 +41,5 @@ const sidebarLinks = document.querySelectorAll('.sidebar-nav a');
 sidebarLinks.forEach(link => {
     link.addEventListener('click', closeSidebar);
 });
+
+document.addEventListener("DOMContentLoaded", loadName)

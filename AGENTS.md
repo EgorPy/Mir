@@ -30,3 +30,5 @@ function test() { console.log("Hello, world") }
 6. Never commit files that are listed in `.gitignore`.
 7. Follow DRY (Don't Repeat Yourself) principles when designing and writing code.
 8. Think of scalability before doing tasks
+9. UI text should be in Russian
+10. Don't write semicolons in .js files

@@ -70,7 +70,8 @@ function createChatInfoHTML(chat) {
                 </div>
 
                 <div class="chat-info-buttons">
-                    <button class="modal-btn leave-chat-btn" id="leaveChatBtn">Покинуть</button>
+                    <button class="modal-btn" id="leaveChatBtn">Покинуть</button>
+                    <button class="modal-btn" id="deleteChatBtn" style="display: none;">Удалить</button>
                 </div>
 
                 <div class="chat-info-details">

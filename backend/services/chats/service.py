@@ -125,7 +125,7 @@ async def chat_info(
 ):
     db = AutoDB(connection_manager)
 
-    members = await db.execute_async("""SELECT u.id, u.first_name, u.last_name FROM users u 
+    members = await db.execute_async("""SELECT u.id, u.first_name, u.last_name, cm.role FROM users u 
 INNER JOIN chat_members cm ON u.id = cm.user_id WHERE cm.chat_id = ?""", (chat_id,))
     result = await db.execute_async("SELECT id, title, owner_id FROM chats WHERE id = ?", (chat_id,))
 
