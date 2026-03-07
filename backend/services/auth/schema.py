@@ -1,9 +1,21 @@
-from pydantic import BaseModel, Field
+from core.method_generator import DBField
+from pydantic import BaseModel
+
+
+class Sessions(BaseModel):
+    __tablename__ = "sessions"
+
+    id: str = DBField(primary_key=True)
+    user_id: str
+    duration: str
+    expires_at: str
 
 
 class Users(BaseModel):
-    id: int | None = Field(default=None, primary_key=True, autoincrement=True)
-    email: str = Field(index=True, unique=True)
+    __tablename__ = "users"
+
+    id: int = DBField(primary_key=True, autoincrement=True)
+    email: str
     first_name: str
     last_name: str
     password: str

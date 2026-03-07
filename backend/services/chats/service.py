@@ -1,6 +1,7 @@
 from core.method_generator import AutoDB, ConnectionManager, cm
 
 from backend.services.auth.api.auth import check_user_session
+from backend.services.chats.schema import *
 
 from fastapi.params import Depends
 from pydantic import BaseModel
@@ -39,7 +40,8 @@ class SearchData(BaseModel):
 async def add_chat_member(chat_id: str, user_id: str, connection_manager: ConnectionManager = Depends(cm.dependency)):
     db = AutoDB(connection_manager)
 
-    await db.insert_chat_member(
+    await db.insert_async(
+        ChatMembers,
         chat_id=chat_id,
         user_id=user_id
     )
@@ -78,7 +80,8 @@ async def search_chats(
 ):
     db = AutoDB(connection_manager)
 
-    result = await db.get_chats(
+    result = await db.select_async(
+        Chats,
         title=str(public_id)
     )
 
@@ -103,7 +106,8 @@ async def create_chat(
 ):
     db = AutoDB(connection_manager)
 
-    result = await db.insert_chat(
+    result = await db.insert_async(
+        Chats,
         owner_id=str(user_id),
         title=str(data.title),
         public_id=str(data.public_id)
@@ -148,7 +152,8 @@ async def leave_chat(
         connection_manager: ConnectionManager = Depends(cm.dependency)
 ):
     db = AutoDB(connection_manager)
-    await db.delete_chat_member(
+    await db.delete_async(
+        ChatMembers,
         chat_id=chat_id,
         user_id=user_id
     )
@@ -169,17 +174,20 @@ async def delete_chat(
         return status.HTTP_403_FORBIDDEN
 
     # delete chat
-    result = await db.delete_chat(
+    result = await db.delete_async(
+        Chats,
         id=str(data.chat_id)
     )
 
     # delete chat members
-    await db.delete_chat_member(
+    await db.delete_async(
+        ChatMembers,
         chat_id=str(data.chat_id)
     )
 
     # delete chat messages
-    await db.delete_message(
+    await db.delete_async(
+        Messages,
         chat_id=str(data.chat_id)
     )
 
@@ -255,7 +263,8 @@ async def send_message(
 ):
     db = AutoDB(connection_manager)
 
-    inserted = await db.insert_messages(
+    inserted = await db.insert_async(
+        Messages,
         chat_id=str(chat_id),
         text=data.text,
         author=str(user_id),
@@ -265,5 +274,5 @@ async def send_message(
     if not inserted:
         return {"ok": False}
 
-    messages = await db.get_messages(chat_id=chat_id)
+    messages = await db.select_async(Messages, {"chat_id": chat_id})
     return {"ok": True, "messages": messages}

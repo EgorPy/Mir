@@ -9,6 +9,7 @@ import sqlite3
 
 from backend.services.auth.logic.auth_logic import AuthLogic
 from backend.phone_mode import DEBUG_PHONE_MODE, SERVER_MODE
+from backend.services.auth.schema import *
 
 from core.method_generator import AutoDB, ConnectionManager
 from core.redirects import redirect_on_success
@@ -35,7 +36,7 @@ async def login(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     response = JSONResponse(content={"message": "Login successful"})
-    if SERVER_MODE == True:
+    if SERVER_MODE is True:
         response.set_cookie(
             key="session_id",
             value=session_id,
@@ -45,7 +46,7 @@ async def login(
             max_age=config.SESSION_DURATION,
             path="/"
         )
-    elif DEBUG_PHONE_MODE == False:
+    elif DEBUG_PHONE_MODE is False:
         response.set_cookie(
             key="session_id",
             value=session_id,
@@ -131,18 +132,16 @@ async def check_user_session(session_id: Optional[str] = Cookie(None),
 
 
 async def check_user_session_for_logout(session_id: Optional[str] = Cookie(None),
-                                        connection: sqlite3.Connection = Depends(cm.dependency)):
+                                        connection_manager: ConnectionManager = Depends(cm.dependency)):
     """ Checks validity of user session for logout """
 
-    db = AutoDB(connection)
+    db = AutoDB(connection_manager)
 
     if not session_id:
         logger.info("No session provided")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No session provided")
-    db.create_table_if_not_exists("sessions")
-    db.create_column_if_not_exists("sessions", "expires_at")
-    user_id = db.execute("SELECT user_id FROM sessions WHERE id = ? AND expires_at > ?",
-                         (session_id, datetime.utcnow()))
+    user_id = await db.execute_async("SELECT user_id FROM sessions WHERE id = ? AND expires_at > ?",
+                                     (session_id, datetime.utcnow()))
     if not user_id:
         logger.info("Invalid or expired session")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired session")
@@ -151,10 +150,10 @@ async def check_user_session_for_logout(session_id: Optional[str] = Cookie(None)
 
 @router.get("/logout/")
 async def logout(session_id: str = Depends(check_user_session_for_logout),
-                 connection: sqlite3.Connection = Depends(cm.dependency)):
+                 connection_manager: ConnectionManager = Depends(cm.dependency)):
     """ Logout endpoint """
 
-    await AuthLogic.logout_user(session_id, connection)
+    await AuthLogic.logout_user(session_id)
     return {"message": "Logged out"}
 
 
@@ -169,7 +168,5 @@ async def get_me(user_id: int = Depends(check_user_session)):
 async def get_name(user_id: int = Depends(check_user_session),
                    connection_manager: ConnectionManager = Depends(cm.dependency)):
     db = AutoDB(connection_manager)
-    result = await db.get_users(id=user_id)
-    if not result:
-        return {"ok": False, "result": result}
-    return {"ok": True, "name": result[0].get("first_name")}
+    result = await db.select_one_async(Users, id=user_id)
+    return {"ok": True, "name": result.get("first_name")}

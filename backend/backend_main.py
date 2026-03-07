@@ -49,9 +49,9 @@ def start_server():
     """ Starts the server """
 
     logger.info(f"BACKEND server started at http://{config.DOMAIN}:{config.BACKEND_PORT}")
-    if SERVER_MODE == True:
+    if SERVER_MODE is True:
         uvicorn.run("backend_main:app", host=config.DOMAIN, port=int(config.BACKEND_PORT), reload=True)
-    elif DEBUG_PHONE_MODE == False:
+    elif DEBUG_PHONE_MODE is False:
         uvicorn.run("backend_main:app", host=config.DOMAIN, port=int(config.BACKEND_PORT), reload=True,
                     ssl_certfile="192.168.1.140+1.pem", ssl_keyfile="192.168.1.140+1-key.pem")
     else:

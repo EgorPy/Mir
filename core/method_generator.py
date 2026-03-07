@@ -1,14 +1,13 @@
 """ Database generating methods with schema support """
 
+from core.logger import logger
+
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 from typing import Any, Dict, Type
 from functools import wraps
 import threading
-import logging
 import sqlite3
-
-logger = logging.getLogger(__name__)
 
 SQL_TYPES = {
     int: "INTEGER",
@@ -80,9 +79,12 @@ class ConnectionManager:
 
         return self.local.connection
 
+    def dependency(self) -> "ConnectionManager":
+        return self
+
 
 def _table_name(model: Type[BaseModel]) -> str:
-    return model.__name__.lower()
+    return getattr(model, "__tablename__", model.__name__.lower())
 
 
 class AutoDB:
@@ -113,16 +115,20 @@ class AutoDB:
         """ Creates a table from a Pydantic model schema """
 
         table = _table_name(model)
+        cursor = self._get_cursor()
 
-        columns = []
+        cursor.execute(f"PRAGMA table_info({table})")
+        existing_columns = {row["name"] for row in cursor.fetchall()}
+
+        columns_sql_list = []
         indexes = []
 
         for name, field in model.model_fields.items():
             annotation = field.annotation
             sql_type = SQL_TYPES.get(annotation, "TEXT")
-
             column_sql = f"{name} {sql_type}"
             extra = field.json_schema_extra or {}
+
             if extra.get("primary_key"):
                 column_sql += " PRIMARY KEY"
             if extra.get("autoincrement"):
@@ -131,17 +137,30 @@ class AutoDB:
                 column_sql += " UNIQUE"
             if extra.get("index"):
                 indexes.append(name)
-            columns.append(column_sql)
 
-        columns_sql = ", ".join(columns)
-        create_sql = f"CREATE TABLE IF NOT EXISTS {table} ({columns_sql})"
-        logger.debug("Creating table %s", table)
-        cursor = self._get_cursor()
-        cursor.execute(create_sql)
+            if name in existing_columns:
+                continue
+
+            if existing_columns:
+                alter_sql = f"ALTER TABLE {table} ADD COLUMN {column_sql}"
+                logger.info("Adding missing column '%s' to table '%s': %s", name, table, alter_sql)
+                cursor.execute(alter_sql)
+            else:
+                columns_sql_list.append(column_sql)
+
+        if not existing_columns:
+            columns_sql = ", ".join(columns_sql_list)
+            create_sql = f"CREATE TABLE IF NOT EXISTS {table} ({columns_sql})"
+            logger.debug("Executing SQL to create table '%s': %s", table, create_sql)
+            cursor.execute(create_sql)
+
         for column in indexes:
-            logger.debug("Creating index for %s.%s", table, column)
-            cursor.execute(f"CREATE INDEX IF NOT EXISTS idx_{table}_{column} ON {table}({column})")
+            index_sql = f"CREATE INDEX IF NOT EXISTS idx_{table}_{column} ON {table}({column})"
+            logger.debug("Executing SQL to create index '%s': %s", column, index_sql)
+            cursor.execute(index_sql)
+
         self._get_connection().commit()
+        logger.info("Table '%s' is up to date", table)
 
     def insert(self, model: Type[BaseModel], **values):
         table = _table_name(model)
@@ -196,6 +215,18 @@ class AutoDB:
         self._get_connection().commit()
         return cursor.rowcount
 
+    def execute(self, sql: str, params: tuple | None = None):
+        params = params or ()
+        logger.debug("Executing SQL: %s, params = %s", sql, params)
+        cursor = self._get_cursor()
+        cursor.execute(sql, params)
+        self._get_connection().commit()
+        try:
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+        except sqlite3.ProgrammingError:
+            return []
+
     @async_db_method
     def insert_async(self, model: Type[BaseModel], **values):
         return self.insert(model, **values)
@@ -209,12 +240,16 @@ class AutoDB:
         return self.select_one(model, **where)
 
     @async_db_method
-    def update_async(self, model: Type[BaseModel], values: Dict[str, Any], where: Dict[str, Any], ):
+    def update_async(self, model: Type[BaseModel], values: Dict[str, Any], where: Dict[str, Any]):
         return self.update(model, values, where)
 
     @async_db_method
     def delete_async(self, model: Type[BaseModel], **where):
         return self.delete(model, **where)
+
+    @async_db_method
+    def execute_async(self, sql: str, params: tuple | None = None):
+        return self.execute(sql, params)
 
 
 cm = ConnectionManager()
