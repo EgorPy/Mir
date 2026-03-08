@@ -1,10 +1,13 @@
-""" Execute this file to run frontend """
+""" Frontend API """
 
 import sys
 import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from backend.services.chats.websockets_nonce import create_nonce
+
+from core.method_generator import AutoDB, ConnectionManager, cm
 from core.config import config
 from core.logger import logger
 
@@ -12,16 +15,34 @@ from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, Request
+from datetime import datetime
 from pathlib import Path
 import webbrowser
 import threading
 import uvicorn
 import jinja2
+import secrets
 
 import traceback
 import sys
 
 app = FastAPI()
+
+
+async def validate_session(session_id: str, connection_manager: ConnectionManager):
+    db = AutoDB(connection_manager)
+
+    result = await db.execute_async(
+        "SELECT user_id FROM sessions WHERE id = ? AND expires_at > ?",
+        (session_id, datetime.utcnow())
+    )
+
+    if not result:
+        return None
+
+    user_id = result[0]['user_id']
+
+    return str(user_id)
 
 
 def scan_and_register_pages():
@@ -48,7 +69,18 @@ def scan_and_register_pages():
         async def page_handler(request: Request, template_file=filename):
             """ Generic page """
 
-            return templates.TemplateResponse(template_file, {"request": request})
+            session_id = request.cookies.get("session_id")
+            user_id = await validate_session(session_id, cm)
+
+            nonce = create_nonce(user_id)
+
+            return templates.TemplateResponse(
+                template_file,
+                {
+                    "request": request,
+                    "ws_nonce": nonce
+                }
+            )
 
         registered_pages.append((route_path, filename))
         logger.debug(f"Route registered: {route_path} -> {filename}")

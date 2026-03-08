@@ -115,7 +115,7 @@ export function attachChatHandlers() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
+(async () => {
     try {
         const chats = await fetchChats();
         renderChats(chats, {
@@ -135,4 +135,4 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadingMsg.textContent = 'Ошибка загрузки чатов';
         }
     }
-});
+})();

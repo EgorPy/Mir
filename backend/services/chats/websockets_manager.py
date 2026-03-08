@@ -11,8 +11,6 @@ class ConnectionManager:
         self.ws_users: dict[WebSocket, str] = {}
 
     async def connect(self, ws: WebSocket, user_id: str):
-        await ws.accept()
-
         self.user_connections[user_id].add(ws)
         self.ws_users[ws] = user_id
 

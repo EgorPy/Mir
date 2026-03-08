@@ -1,6 +1,9 @@
+import { getUserId } from '/static/get_user_id.js'
+
 class WSClient {
-    constructor(url) {
+    constructor(url, userId) {
         this.url = url
+        this.userId = userId
         this.ws = null
 
         this.handlers = new Map()
@@ -15,39 +18,55 @@ class WSClient {
         this.startHeartbeat()
     }
 
-    connect() {
+    async fetchWsNonce() {
+        try {
+            const res = await fetch(`${window.BACKEND_URL}/ws-nonce?user_id=${this.userId}`)
+            const data = await res.json()
+            return data.nonce
+        } catch (err) {
+            console.error("Failed to fetch WS nonce:", err)
+            return null
+        }
+    }
 
+    async connect() {
         this.setStatus("connecting")
 
         this.ws = new WebSocket(this.url)
 
-        this.ws.onopen = () => {
-
+        this.ws.onopen = async () => {
             this.setStatus("connected")
-
             this.reconnectDelay = 1000
+
+            const nonce = await this.fetchWsNonce()
+            if (!nonce) {
+                console.error("Cannot get WS nonce, closing connection")
+                this.ws.close()
+                return
+            }
+            window.WS_NONCE = nonce
+
+            console.log(window.SESSION_ID)
+
+            this.send({
+                type: "auth",
+                nonce: window.WS_NONCE
+            })
 
             while (this.queue.length)
             this.ws.send(this.queue.shift())
         }
 
         this.ws.onmessage = (event) => {
-
             const data = JSON.parse(event.data)
-
             const handlers = this.handlers.get(data.type)
-
             if (!handlers) return
-
             handlers.forEach(h => h(data))
         }
 
         this.ws.onclose = () => {
-
             this.setStatus("reconnecting")
-
             setTimeout(() => this.connect(), this.reconnectDelay)
-
             this.reconnectDelay = Math.min(
                 this.reconnectDelay * 2,
                 this.maxReconnectDelay
@@ -66,9 +85,7 @@ class WSClient {
     }
 
     send(data) {
-
         const payload = JSON.stringify(data)
-
         if (this.ws.readyState === WebSocket.OPEN)
         this.ws.send(payload)
         else
@@ -76,10 +93,8 @@ class WSClient {
     }
 
     on(type, handler) {
-
         if (!this.handlers.has(type))
         this.handlers.set(type, new Set())
-
         this.handlers.get(type).add(handler)
     }
 
@@ -90,12 +105,12 @@ class WSClient {
     setStatus(state) {
         this.statusHandlers.forEach(h => h(state))
     }
-
 }
 
 const backend = new URL(window.BACKEND_URL)
 const protocol = backend.protocol === "https:" ? "wss" : "ws"
-const ws = new WSClient(`${protocol}://${backend.host}/ws`)
+const userId = await getUserId()
+const ws = new WSClient(`${protocol}://${backend.host}/ws`, userId)
 
 export function wsSend(data) {
     ws.send(data)
@@ -108,3 +123,7 @@ export function wsOn(type, handler) {
 export function wsOnStatus(handler) {
     ws.onStatus(handler)
 }
+
+wsOn("auth_ok", (data) => {
+    window.SESSION_ID = data.session_id
+})

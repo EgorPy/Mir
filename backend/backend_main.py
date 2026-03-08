@@ -9,19 +9,26 @@ from core.method_generator import AutoDB, Schema, cm
 from core.config import config
 from core.logger import logger
 
+from backend.services.auth.schema import Users
+from backend.services.chats.schema import Messages
 from backend.services.auth.api.auth import router as auth_router
 from backend.services.chats.service import router as chats_router
+from backend.services.chats.websockets_manager import manager
+from backend.services.chats.websockets_nonce import WS_PENDING_NONCES, create_nonce
 from backend.phone_mode import DEBUG_PHONE_MODE, SERVER_MODE
 
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+
+from datetime import datetime
+import importlib
+import traceback
 import uvicorn
 import logging
 import inspect
 import pkgutil
-import importlib
-
-import traceback
+import secrets
+import json
 import sys
 
 app = FastAPI()
@@ -48,6 +55,162 @@ app.add_middleware(
 
 app.include_router(auth_router, prefix="/auth", tags=["Auth"])
 app.include_router(chats_router, prefix="/chats", tags=["Chats"])
+
+
+class WebSocketEventRouter:
+
+    def __init__(self):
+        self.handlers = {}
+
+    def event(self, name):
+        def decorator(func):
+            self.handlers[name] = func
+            return func
+
+        return decorator
+
+    async def dispatch(self, name, ws, data):
+        handler = self.handlers.get(name)
+        if handler:
+            await handler(ws, data)
+
+
+events = WebSocketEventRouter()
+
+
+@app.get("/ws-nonce")
+async def get_ws_nonce(user_id: str):
+    nonce = create_nonce(user_id)
+    return {"nonce": nonce}
+
+
+@events.event("subscribe_chat")
+async def subscribe_chat(ws: WebSocket, data: dict):
+    chat_id = int(data["chat_id"])
+    manager.subscribe_chat(ws, chat_id)
+
+
+@events.event("send_message")
+async def send_message(ws, data: dict):
+    chat_id = str(data.get("chat_id"))
+    text = data.get("text", "").strip()
+    if not text or not chat_id:
+        return
+
+    user_id = manager.ws_users.get(ws)
+    if not user_id:
+        return
+
+    db = AutoDB(cm)
+
+    message = await db.insert_async(
+        Messages,
+        chat_id=chat_id,
+        text=text,
+        author=str(user_id),
+        created_at=datetime.now().replace(microsecond=0)
+    )
+
+    print(user_id)
+    user = await db.select_one_async(Users, id=str(user_id))
+
+    if not message:
+        return
+
+    message["user_id"] = message.get("author")
+    message["author"] = f"{user.get('first_name')} {user.get('last_name')}"
+
+    await manager.send_chat(chat_id, {
+        "type": "new_message",
+        "message": message
+    })
+
+
+@events.event("typing")
+async def typing(ws: WebSocket, data: dict):
+    chat_id = int(data["chat_id"])
+    user_id = manager.ws_users.get(ws)
+
+    await manager.send_chat(chat_id, {
+        "type": "typing",
+        "chat_id": chat_id,
+        "user_id": user_id
+    })
+
+
+@events.event("message_delivered")
+async def message_delivered(ws: WebSocket, data: dict):
+    chat_id = data["chat_id"]
+    message_id = data["message_id"]
+    user_id = manager.ws_users.get(ws)
+
+    await manager.send_chat(chat_id, {
+        "type": "message_delivered",
+        "message_id": message_id,
+        "user_id": user_id
+    })
+
+
+@events.event("message_read")
+async def message_read(ws: WebSocket, data: dict):
+    chat_id = data["chat_id"]
+    message_id = data["message_id"]
+    user_id = manager.ws_users.get(ws)
+
+    await manager.send_chat(chat_id, {
+        "type": "message_read",
+        "message_id": message_id,
+        "user_id": user_id
+    })
+
+
+@events.event("ping")
+async def ping(ws: WebSocket, data: dict):
+    await manager.send_ws(ws, {"type": "pong"})
+
+
+@app.websocket("/ws")
+async def websocket_endpoint(ws: WebSocket):
+    await ws.accept()
+
+    raw = await ws.receive_text()
+    data = json.loads(raw)
+
+    if data.get("type") != "auth":
+        await ws.close()
+        return
+
+    nonce = data.get("nonce")
+
+    if nonce not in WS_PENDING_NONCES:
+        await ws.close()
+        return
+
+    del WS_PENDING_NONCES[nonce]
+
+    session_id = secrets.token_hex(32)
+
+    user_id = session_id  # временно, пока не свяжешь с реальным пользователем
+
+    await manager.connect(ws, user_id)
+
+    await manager.send_ws(ws, {
+        "type": "auth_ok",
+        "session_id": session_id
+    })
+
+    try:
+        while True:
+            raw = await ws.receive_text()
+            try:
+                data = json.loads(raw)
+            except:
+                continue
+            event = data.get("type")
+            await events.dispatch(event, ws, data)
+    except WebSocketDisconnect:
+        await manager.disconnect(ws)
+        logger.info(f"WS disconnect {user_id}")
 
 
 def get_schema_files():

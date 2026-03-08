@@ -92,16 +92,13 @@ export function insertMessages(messages) {
 }
 
 export async function sendMessage(text) {
-    if (!currentChatId) return
+    if (!currentChatId) return;
 
-    const baseUrl = window.BACKEND_URL || ''
-
-    await fetch(`${baseUrl}/chats/${currentChatId}/messages/send`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text })
-    })
+    wsSend({
+        type: "send_message",
+        chat_id: currentChatId,
+        text: text.trim()
+    });
 }
 
 function formatTime(isoString) {
