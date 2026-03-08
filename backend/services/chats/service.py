@@ -1,6 +1,7 @@
 from core.method_generator import AutoDB, ConnectionManager, cm
 
 from backend.services.auth.api.auth import check_user_session
+from backend.services.chats.websockets_manager import manager
 from backend.services.auth.schema import Users
 from backend.services.chats.schema import *
 
@@ -265,7 +266,7 @@ async def send_message(
 ):
     db = AutoDB(connection_manager)
 
-    inserted = await db.insert_async(
+    message = await db.insert_async(
         Messages,
         chat_id=str(chat_id),
         text=data.text,
@@ -277,8 +278,13 @@ async def send_message(
         id=str(user_id)
     )
 
-    if not inserted:
+    if not message:
         return {"ok": False}
-    inserted["user_id"] = inserted.get("author")
-    inserted["author"] = f"{user.get('first_name')} {user.get('last_name')}"
-    return {"ok": True, "message": inserted}
+    message["user_id"] = message.get("author")
+    message["author"] = f"{user.get('first_name')} {user.get('last_name')}"
+
+    await manager.send_chat(chat_id, {
+        "type": "new_message",
+        "message": message
+    })
+    return {"ok": True, "message": message}

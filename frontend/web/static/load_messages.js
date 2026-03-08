@@ -1,10 +1,13 @@
 import messageTemplateHtml from '/pages/widgets/message.js'
 import { getUserId } from '/static/get_user_id.js'
 import { getChatState } from '/static/chat_state.js'
+import { wsSend, wsOn } from '/static/websockets.js'
 
 const tempDiv = document.createElement('div')
 tempDiv.innerHTML = messageTemplateHtml
+
 const messageTemplate = tempDiv.firstElementChild
+
 const noMessagesYet = document.querySelector(".no-messages-yet")
 const messagesContainer = document.querySelector('.messages-container')
 
@@ -13,8 +16,14 @@ let userId = null
 let inputInitialized = false
 let chatState = null
 
+const messageElements = new Map()
+
 export async function loadMessages(chatId) {
     currentChatId = chatId
+    wsSend({
+        type: "subscribe_chat",
+        chat_id: chatId
+    })
     chatState = getChatState(currentChatId)
     userId = await getUserId()
     clearMessages()
@@ -25,29 +34,40 @@ export async function loadMessages(chatId) {
 export async function fetchMessages(chatId) {
     const response = await fetch(`${window.BACKEND_URL}/chats/${chatId}/messages`, {
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' }
     })
-    if (!response.ok) throw new Error(`HTTP error ${response.status}`)
-    const messages = await response.json()
-    return messages
+    if (!response.ok)
+    throw new Error(`HTTP error ${response.status}`)
+    return await response.json()
+}
+
+function renderMessage(message) {
+    const el = messageTemplate.cloneNode(true)
+    el.dataset.messageId = message.id
+    el.querySelector('.message-author').textContent = message.author
+    el.querySelector('.message-date').textContent = formatTime(message.created_at)
+    el.querySelector('.message-text').textContent = message.text
+    if (message.user_id == userId) {
+        if (chatState.members.length <= 1) {
+            el.querySelector('.read').style.display = 'block'
+        }
+        else {
+            el.querySelector('.unread').style.display = 'block'
+        }
+    }
+    messageElements.set(message.id, el)
+    return el
 }
 
 export function insertMessage(message) {
     updateUI([message])
-    const messageElement = messageTemplate.cloneNode(true)
-    messageElement.querySelector('.message-author').textContent = message.author
-    messageElement.querySelector('.message-date').textContent = formatTime(message.created_at)
-    messageElement.querySelector('.message-text').textContent = message.text
-
-    if (message.user_id == userId) {
-        messageElement.querySelector('.unread').style.display = 'block'
-    }
-
-    messagesContainer.appendChild(messageElement)
+    const el = renderMessage(message)
+    messagesContainer.appendChild(el)
     messagesContainer.scrollTop = messagesContainer.scrollHeight
 }
 
 export function clearMessages() {
+    messageElements.clear()
     messagesContainer.innerHTML = ''
 }
 
@@ -64,20 +84,9 @@ function updateUI(messages) {
 export function insertMessages(messages) {
     updateUI(messages)
     messages.forEach(msg => {
-        const messageElement = messageTemplate.cloneNode(true)
-        messageElement.querySelector('.message-author').textContent = msg.author
-        messageElement.querySelector('.message-date').textContent = formatTime(msg.created_at)
-        messageElement.querySelector('.message-text').textContent = msg.text
+        const el = renderMessage(msg)
+        messagesContainer.appendChild(el)
 
-        if (msg.user_id == userId) {
-            if (chatState.members.length <= 1) {
-                messageElement.querySelector('.read').style.display = 'block'
-            } else if (true) {
-                messageElement.querySelector('.unread').style.display = 'block'
-            }
-        }
-
-        messagesContainer.appendChild(messageElement)
     })
     messagesContainer.scrollTop = messagesContainer.scrollHeight
 }
@@ -86,16 +95,13 @@ export async function sendMessage(text) {
     if (!currentChatId) return
 
     const baseUrl = window.BACKEND_URL || ''
-    const response = await fetch(`${baseUrl}/chats/${currentChatId}/messages/send`, {
+
+    await fetch(`${baseUrl}/chats/${currentChatId}/messages/send`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text })
     })
-
-    const result = await response.json()
-    if (!result.ok) return
-    await insertMessage(result.message)
 }
 
 function formatTime(isoString) {
@@ -107,7 +113,6 @@ function formatTime(isoString) {
         minute: '2-digit'
     })
 }
-
 
 export function setupMessageInput() {
     if (inputInitialized) return
@@ -122,8 +127,6 @@ export function setupMessageInput() {
         if (!text) return
         input.value = ''
         await sendMessage(text)
-        const messagesContainer = document.querySelector('.messages-container')
-        messagesContainer.scrollTop = messagesContainer.scrollHeight
     })
 
     input.addEventListener('keydown', async (e) => {
@@ -133,3 +136,48 @@ export function setupMessageInput() {
         }
     })
 }
+
+wsOn("new_message", (data) => {
+    const message = data.message
+
+    if (message.chat_id != currentChatId)
+    return
+
+    insertMessage(message)
+
+    wsSend({
+        type: "message_delivered",
+        chat_id: message.chat_id,
+        message_id: message.id
+    })
+
+})
+
+wsOn("message_delivered", (data) => {
+    const el = messageElements.get(data.message_id)
+
+    if (!el) return
+
+    const unread = el.querySelector('.unread')
+
+    if (unread) {
+        unread.style.display = "block"
+    }
+})
+
+wsOn("message_read", (data) => {
+    const el = messageElements.get(data.message_id)
+
+    if (!el) return
+
+    const unread = el.querySelector('.unread')
+    const read = el.querySelector('.read')
+
+    if (unread) {
+        unread.style.display = "none"
+    }
+
+    if (read) {
+        read.style.display = "block"
+    }
+})

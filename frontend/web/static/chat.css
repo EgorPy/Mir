@@ -59,22 +59,30 @@
     margin: 0.8rem 0;
 }
 
+.chat-input textarea::-webkit-scrollbar {
+    display: none;
+}
+
+.chat-input textarea::-webkit-scrollbar,
 .chats::-webkit-scrollbar,
 .messages-container::-webkit-scrollbar {
     width: 8px;
 }
 
+.chat-input textarea::-webkit-scrollbar-track,
 .chats::-webkit-scrollbar-track,
 .messages-container::-webkit-scrollbar-track {
     background: var(--color-bg-elev-4);
 }
 
+.chat-input textarea::-webkit-scrollbar-thumb,
 .chats::-webkit-scrollbar-thumb,
 .messages-container::-webkit-scrollbar-thumb {
     background: var(--color-bg-elev-13);
     border-radius: 4px;
 }
 
+.chat-input textarea::-webkit-scrollbar-button,
 .chats::-webkit-scrollbar-button,
 .messages-container::-webkit-scrollbar-button {
     display: none;
@@ -247,7 +255,7 @@
     background: var(--color-accent-4);
 }
 
-.chat-input input {
+.chat-input textarea {
     flex: 1 1 auto;
     min-width: 0;
     padding: 0.5rem 1rem;
@@ -257,6 +265,11 @@
     color: var(--color-white);
     font-size: 1.5rem;
     box-sizing: border-box;
+    field-sizing: content;
+    min-height: 1rem;
+    max-height: 40vh;
+    resize: none;
+    height: fit-content;
 }
 
 .chat-input button {
@@ -271,6 +284,7 @@
     font-size: 1rem;
     box-sizing: border-box;
     transition: 0.2s;
+    align-self: flex-end;
 }
 
 .chat-input button:hover {
@@ -309,6 +323,15 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     width: 100%
+}
+
+.ws-status {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    padding: 1rem;
+    background: var(--color-bg-elev-2);
+    border-top-right-radius: 0.5rem;
 }
 
 @media (max-width: 768px) {
@@ -362,11 +385,3 @@
         flex: 1 1 auto;
     }
 }
-
-
-
-
-
-
-
-

@@ -1,6 +1,6 @@
 """ Auth endpoints and validation """
 
-from fastapi import APIRouter, Form, status, Depends, HTTPException, Cookie
+from fastapi import APIRouter, Form, status, Depends, HTTPException, Cookie, WebSocket
 from fastapi.responses import JSONResponse
 from typing_extensions import Annotated
 from datetime import datetime
@@ -129,6 +129,32 @@ async def check_user_session(session_id: Optional[str] = Cookie(None),
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired session")
 
     return str(user_id)
+
+
+async def check_user_session_ws(ws: WebSocket, connection_manager: ConnectionManager):
+    """
+    Checks validity of user session for websocket.
+    session_id is extracted from cookie
+    """
+
+    await ws.accept()
+
+    session_id = ws.cookies.get("session")
+    if not session_id:
+        await ws.close(code=4401)
+        return None
+
+    db = AutoDB(connection_manager)
+    result = await db.execute_async(
+        "SELECT user_id FROM sessions WHERE id = ? AND expires_at > ?",
+        (session_id, datetime.utcnow())
+    )
+
+    if not result or len(result) == 0 or not result[0].get("user_id"):
+        await ws.close(code=4401)
+        return None
+
+    return str(result[0]["user_id"])
 
 
 async def check_user_session_for_logout(session_id: Optional[str] = Cookie(None),
