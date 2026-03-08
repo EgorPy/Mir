@@ -1,0 +1,15 @@
+<input id="msg">
+<button onclick="send()">Send</button>
+
+<script>
+    const ws = new WebSocket("ws://localhost:8000/ws")
+
+    ws.onmessage = (event) => {
+        console.log("message:", event.data)
+    }
+
+    function send() {
+        const input = document.getElementById("msg")
+        ws.send(input.value)
+    }
+</script>

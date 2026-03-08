@@ -20,7 +20,7 @@ router = APIRouter()
 cm = ConnectionManager()
 
 
-@router.post("/login/", status_code=status.HTTP_200_OK)
+@router.post("/login", status_code=status.HTTP_200_OK)
 @redirect_on_success("/profile")
 async def login(
         email: Annotated[str, Form(min_length=5, max_length=256,

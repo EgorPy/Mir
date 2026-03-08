@@ -1,6 +1,7 @@
 from core.method_generator import AutoDB, ConnectionManager, cm
 
 from backend.services.auth.api.auth import check_user_session
+from backend.services.auth.schema import Users
 from backend.services.chats.schema import *
 
 from fastapi.params import Depends
@@ -82,7 +83,7 @@ async def search_chats(
 
     result = await db.select_async(
         Chats,
-        title=str(public_id)
+        {"title": str(public_id)}
     )
 
     if result:
@@ -116,9 +117,9 @@ async def create_chat(
     if not result:
         return {"ok": False}
 
-    await add_chat_member(result[0].get("id", None), user_id, connection_manager)
+    await add_chat_member(result.get("id", None), user_id, connection_manager)
 
-    return {"ok": True, "id": result[0].get("id", None), "result": result[0]}
+    return {"ok": True, "id": result.get("id", None), "result": result}
 
 
 @router.get("/{chat_id}/info")
@@ -214,7 +215,8 @@ async def get_messages(
             m.chat_id,
             m.text,
             m.created_at,
-            u.first_name || ' ' || u.last_name AS author
+            u.first_name || ' ' || u.last_name AS author,
+            u.id AS user_id
         FROM messages m
         LEFT JOIN users u ON m.author = u.id
         WHERE m.chat_id = ?
@@ -270,9 +272,13 @@ async def send_message(
         author=str(user_id),
         created_at=datetime.now().replace(microsecond=0)
     )
+    user = await db.select_one_async(
+        Users,
+        id=str(user_id)
+    )
 
     if not inserted:
         return {"ok": False}
-
-    messages = await db.select_async(Messages, {"chat_id": chat_id})
-    return {"ok": True, "messages": messages}
+    inserted["user_id"] = inserted.get("author")
+    inserted["author"] = f"{user.get('first_name')} {user.get('last_name')}"
+    return {"ok": True, "message": inserted}

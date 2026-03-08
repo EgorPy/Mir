@@ -95,11 +95,13 @@ function createChatInfoHTML(chat) {
                     <div class="members-list">
                         ${chat.members.map(member => `
                             <div class="member-item">
-                                <img src="${member.avatar || defaultAvatar}"
-                                     alt="avatar"
-                                     class="member-avatar">
-                                <div class="member-name">${member.first_name} ${member.last_name}</div>
-                                ${member.role ? `<span class="member-role">${member.role}</span>` : ''}
+                                <div class="user">
+                                    <img src="${member.avatar || defaultAvatar}"
+                                         alt="avatar"
+                                         class="member-avatar">
+                                    <div class="member-name">${member.first_name} ${member.last_name}</div>
+                                </div>
+                                ${(member.role && (member.role != "member")) ? `<span class="member-role">${member.role}</span>` : ''}
                             </div>
                         `).join('')}
                     </div>

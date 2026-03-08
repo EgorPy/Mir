@@ -56,7 +56,9 @@ def get_schema_files():
     return pkgutil.iter_modules([schemas_path])
 
 
-def ensure_schema(skip: bool = False):
+def ensure_schema(skip: bool = True):
+    if skip:
+        return
     schema_files = get_schema_files()
     db = AutoDB(cm)
 

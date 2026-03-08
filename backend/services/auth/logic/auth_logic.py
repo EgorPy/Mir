@@ -15,14 +15,15 @@ class AuthLogic:
     async def login_user(email: str, password: str):
         db = AutoDB(cm)
 
-        hashed_password = await db.select_one_async(Users, email=email)
+        result = await db.select_one_async(Users, email=email)
+        hashed_password = result.get("password")
         if not hashed_password or not verify_password(password, hashed_password):
             return None
 
         result = await db.select_one_async(Users, email=email)
         if not result:
             return
-        user_id = result.id
+        user_id = result.get("id")
         await db.delete_async(Sessions, user_id=user_id)
 
         expires_at = str(datetime.now() + timedelta(seconds=int(config.SESSION_DURATION)))
@@ -33,9 +34,10 @@ class AuthLogic:
             duration=config.SESSION_DURATION,
             expires_at=expires_at
         )
+        print(response)
 
         if response and len(response) > 0:
-            session_id = response[0]["id"]
+            session_id = response.get("id")
             return session_id
         return None
 

@@ -175,7 +175,8 @@ class AutoDB:
         cursor = self._get_cursor()
         cursor.execute(sql, tuple(values.values()))
         self._get_connection().commit()
-        return cursor.lastrowid
+        row_id = values.get("id") or cursor.lastrowid
+        return self.select_one(model, id=row_id)
 
     def select(self, model: Type[BaseModel], where: Dict[str, Any] | None = None):
         table = _table_name(model)

@@ -10,7 +10,19 @@ export default `
         <div class="message-text"></div>
         <div class="message-bottom">
             <span class="message-date"></span>
-            <span class="message-read"></span>
+            <span class="message-read">
+                <div class="read">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter">
+                      <polyline points="2 8 8 14 18 2"/>
+                      <polyline points="6 8 12 14 22 2"/>
+                    </svg>
+                </div>
+                <div class="unread">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter">
+                      <polyline points="2 8 8 14 18 2"/>
+                    </svg>
+                </div>
+            </span>
         </div>
     </div>
 </div>`
