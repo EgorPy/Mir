@@ -16,6 +16,8 @@ let inputInitialized = false
 let chatState = null
 
 const messageElements = new Map()
+
+// IntersectionObserver для пометки прочитанными
 const readObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -37,7 +39,6 @@ const readObserver = new IntersectionObserver((entries) => {
 
 export async function loadMessages(chatId) {
     currentChatId = chatId
-
     await wsSend({ type: "subscribe_chat", chat_id: chatId })
 
     chatState = getChatState(currentChatId)
@@ -61,6 +62,7 @@ function renderMessage(message) {
     const el = messageTemplate.cloneNode(true)
     el.dataset.messageId = message.id
     el.dataset.authorId = String(message.user_id)
+    el.dataset.readAt = message.read_at || ''
 
     el.querySelector('.message-author').textContent = message.author
     el.querySelector('.message-date').textContent = formatTime(message.created_at)
@@ -68,12 +70,9 @@ function renderMessage(message) {
 
     const unread = el.querySelector('.unread')
     const read = el.querySelector('.read')
-    unread.style.display = "none"
-    read.style.display = "none"
 
     if (String(message.user_id) === userId) {
-        const readAt = message.read_at || el.dataset.readAt
-        if (readAt) {
+        if (el.dataset.readAt) {
             read.style.display = "block"
             unread.style.display = "none"
         } else {
@@ -97,6 +96,15 @@ export function insertMessage(message) {
     messagesContainer.scrollTop = messagesContainer.scrollHeight
 }
 
+export function insertMessages(messages) {
+    updateUI(messages)
+    messages.forEach(msg => {
+        const el = renderMessage(msg)
+        messagesContainer.appendChild(el)
+    })
+    messagesContainer.scrollTop = messagesContainer.scrollHeight
+}
+
 export function clearMessages() {
     messageElements.clear()
     messagesContainer.innerHTML = ''
@@ -110,15 +118,6 @@ function updateUI(messages) {
         noMessagesYet.style.display = "none"
         messagesContainer.style.display = "block"
     }
-}
-
-export function insertMessages(messages) {
-    updateUI(messages)
-    messages.forEach(msg => {
-        const el = renderMessage(msg)
-        messagesContainer.appendChild(el)
-    })
-    messagesContainer.scrollTop = messagesContainer.scrollHeight
 }
 
 export async function sendMessage(text) {
@@ -159,7 +158,6 @@ export function setupMessageInput() {
 wsOn("new_message", (data) => {
     const message = data.message
     if (message.chat_id != currentChatId) return
-
     insertMessage(message)
 })
 
