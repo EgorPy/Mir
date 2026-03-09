@@ -175,6 +175,7 @@ wsOn("new_message", (data) => {
 })
 
 wsOn("message_read", (data) => {
+    if (data.chat_id != currentChatId) return
     const el = messageElements.get(data.message_id)
     if (!el) return
 
