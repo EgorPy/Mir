@@ -17,25 +17,6 @@ let chatState = null
 
 const messageElements = new Map()
 
-const readObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            const el = entry.target
-            const messageId = el.dataset.messageId
-            const authorId = el.dataset.authorId
-
-            if (authorId !== userId && !el.dataset.readSent) {
-                wsSend({
-                    type: "message_read",
-                    chat_id: currentChatId,
-                    message_id: messageId
-                })
-                el.dataset.readSent = "true"
-            }
-        }
-    })
-}, { root: messagesContainer, threshold: 0.5 })
-
 export async function loadMessages(chatId) {
     currentChatId = chatId
     await wsSend({ type: "subscribe_chat", chat_id: chatId })
@@ -46,6 +27,8 @@ export async function loadMessages(chatId) {
     clearMessages()
     const messages = await fetchMessages(chatId)
     insertMessages(messages)
+
+    checkVisibleMessages()
 }
 
 export async function fetchMessages(chatId) {
@@ -84,7 +67,6 @@ function renderMessage(message) {
     }
 
     messageElements.set(message.id, el)
-    readObserver.observe(el)
     return el
 }
 
@@ -93,6 +75,7 @@ export function insertMessage(message) {
     const el = renderMessage(message)
     messagesContainer.appendChild(el)
     messagesContainer.scrollTop = messagesContainer.scrollHeight
+    checkVisibleMessages()
 }
 
 export function insertMessages(messages) {
@@ -102,6 +85,7 @@ export function insertMessages(messages) {
         messagesContainer.appendChild(el)
     })
     messagesContainer.scrollTop = messagesContainer.scrollHeight
+    checkVisibleMessages()
 }
 
 export function clearMessages() {
@@ -152,26 +136,43 @@ export function setupMessageInput() {
             button.click()
         }
     })
+
+    messagesContainer.addEventListener('scroll', checkVisibleMessages)
+}
+
+function isElementVisible(el) {
+    const rect = el.getBoundingClientRect()
+    const containerRect = messagesContainer.getBoundingClientRect()
+    return rect.bottom > containerRect.top && rect.top < containerRect.bottom
+}
+
+function checkVisibleMessages() {
+    if (!currentChatId) return
+    for (const [id, el] of messageElements) {
+        if (el.dataset.authorId === userId) continue
+        if (el.dataset.readAt) continue
+        if (isElementVisible(el)) {
+            wsSend({ type: "message_read", chat_id: currentChatId, message_id: id })
+            el.dataset.readAt = new Date().toISOString()
+        }
+    }
 }
 
 wsOn("new_message", (data) => {
     const message = data.message
-    if (message.chat_id !== currentChatId) return
-
-    const el = renderMessage(message)
-    messagesContainer.appendChild(el)
-    messagesContainer.scrollTop = messagesContainer.scrollHeight
+    if (message.chat_id != currentChatId) return
+    insertMessage(message)
 })
 
 wsOn("message_read", (data) => {
     const el = messageElements.get(data.message_id)
     if (!el) return
-    if (el.dataset.authorId !== userId) return
 
-    el.dataset.readAt = new Date().toISOString()
     const unread = el.querySelector('.unread')
     const read = el.querySelector('.read')
 
     if (unread) unread.style.display = "none"
     if (read) read.style.display = "block"
+
+    el.dataset.readAt = new Date().toISOString()
 })
