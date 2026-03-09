@@ -3,7 +3,7 @@
 import sys
 import os
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # do not move down
 
 from backend.services.chats.websockets_nonce import create_nonce
 
@@ -19,12 +19,9 @@ from datetime import datetime
 from pathlib import Path
 import webbrowser
 import threading
+import traceback
 import uvicorn
 import jinja2
-import secrets
-
-import traceback
-import sys
 
 app = FastAPI()
 

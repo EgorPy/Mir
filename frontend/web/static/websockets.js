@@ -59,7 +59,7 @@ class WSClient {
         this.ws.onmessage = (event) => {
             const data = JSON.parse(event.data)
 
-//            console.log("WS IN: ", data)
+            console.log("WS IN: ", data)
 
             const handlers = this.handlers.get(data.type)
             if (!handlers) return

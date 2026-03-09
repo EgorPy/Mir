@@ -9,12 +9,14 @@ from core.method_generator import AutoDB, Schema, cm
 from core.config import config
 from core.logger import logger
 
-from backend.services.auth.schema import Users
 from backend.services.chats.schema import Messages
+from backend.services.auth.schema import Users
+
 from backend.services.auth.api.auth import router as auth_router
 from backend.services.chats.service import router as chats_router
-from backend.services.chats.websockets_manager import manager
+
 from backend.services.chats.websockets_nonce import WS_PENDING_NONCES, create_nonce
+from backend.services.chats.websockets_manager import manager
 from backend.phone_mode import DEBUG_PHONE_MODE, SERVER_MODE
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,7 +31,6 @@ import inspect
 import pkgutil
 import secrets
 import json
-import sys
 
 app = FastAPI()
 
@@ -155,6 +156,20 @@ async def message_read(ws: WebSocket, data: dict):
     chat_id = data["chat_id"]
     message_id = data["message_id"]
     user_id = manager.ws_users.get(ws)
+
+    db = AutoDB(cm)
+
+    print(message_id, user_id)
+    await db.update_async(Messages,
+                          {"read_at": datetime.now().replace(microsecond=0)},
+                          {"id": message_id})
+
+    message = await db.select_one_async(Messages, id=message_id)
+    if not message:
+        return
+
+    if message.get("author") == str(user_id):
+        return
 
     await manager.send_chat(chat_id, {
         "type": "message_read",

@@ -204,7 +204,7 @@ class AutoDB:
         where_clause = " AND ".join(f"{k} = ?" for k in where)
         sql = f"UPDATE {table} SET {set_clause} WHERE {where_clause}"
         params = list(values.values()) + list(where.values())
-        logger.debug("UPDATE %s VALUES = %s WHERE = %s", table, values, where)
+        logger.debug(sql)
         cursor = self._get_cursor()
         cursor.execute(sql, params)
         self._get_connection().commit()

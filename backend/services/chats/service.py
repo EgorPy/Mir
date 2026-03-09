@@ -216,6 +216,7 @@ async def get_messages(
             m.chat_id,
             m.text,
             m.created_at,
+            m.read_at,
             u.first_name || ' ' || u.last_name AS author,
             u.id AS user_id
         FROM messages m
