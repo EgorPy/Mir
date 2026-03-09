@@ -16,14 +16,29 @@ let inputInitialized = false
 let chatState = null
 
 const messageElements = new Map()
+const readObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const el = entry.target
+            const messageId = el.dataset.messageId
+            const authorId = el.dataset.authorId
+
+            if (authorId !== userId) {
+                wsSend({
+                    type: "message_read",
+                    chat_id: currentChatId,
+                    message_id: messageId
+                })
+            }
+            readObserver.unobserve(el)
+        }
+    })
+}, { root: messagesContainer, threshold: 0.5 })
 
 export async function loadMessages(chatId) {
     currentChatId = chatId
 
-    await wsSend({
-        type: "subscribe_chat",
-        chat_id: chatId
-    })
+    await wsSend({ type: "subscribe_chat", chat_id: chatId })
 
     chatState = getChatState(currentChatId)
     userId = String(await getUserId())
@@ -31,16 +46,6 @@ export async function loadMessages(chatId) {
     clearMessages()
     const messages = await fetchMessages(chatId)
     insertMessages(messages)
-
-    messages.forEach(msg => {
-        if (String(msg.user_id) !== userId && !msg.read_at) {
-            wsSend({
-                type: "message_read",
-                chat_id: chatId,
-                message_id: msg.id
-            })
-        }
-    })
 }
 
 export async function fetchMessages(chatId) {
@@ -63,19 +68,16 @@ function renderMessage(message) {
 
     const unread = el.querySelector('.unread')
     const read = el.querySelector('.read')
-
     unread.style.display = "none"
     read.style.display = "none"
 
     if (String(message.user_id) === userId) {
-        if (message.read_at) {
-            read.style.display = "block"
-        } else {
-            unread.style.display = "block"
-        }
+        if (message.read_at) read.style.display = "block"
+        else unread.style.display = "block"
     }
 
     messageElements.set(message.id, el)
+    readObserver.observe(el)
     return el
 }
 
@@ -150,16 +152,11 @@ wsOn("new_message", (data) => {
     if (message.chat_id != currentChatId) return
 
     insertMessage(message)
-
-    if (String(message.user_id) !== userId) {
-        wsSend({ type: "message_read", chat_id: message.chat_id, message_id: message.id })
-    }
 })
 
 wsOn("message_read", (data) => {
     const el = messageElements.get(data.message_id)
     if (!el) return
-
     if (el.dataset.authorId !== userId) return
 
     const unread = el.querySelector('.unread')
