@@ -17,7 +17,6 @@ let chatState = null
 
 const messageElements = new Map()
 
-// IntersectionObserver для пометки прочитанными
 const readObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -25,14 +24,14 @@ const readObserver = new IntersectionObserver((entries) => {
             const messageId = el.dataset.messageId
             const authorId = el.dataset.authorId
 
-            if (authorId !== userId) {
+            if (authorId !== userId && !el.dataset.readSent) {
                 wsSend({
                     type: "message_read",
                     chat_id: currentChatId,
                     message_id: messageId
                 })
+                el.dataset.readSent = "true"
             }
-            readObserver.unobserve(el)
         }
     })
 }, { root: messagesContainer, threshold: 0.5 })
@@ -157,20 +156,22 @@ export function setupMessageInput() {
 
 wsOn("new_message", (data) => {
     const message = data.message
-    if (message.chat_id != currentChatId) return
-    insertMessage(message)
+    if (message.chat_id !== currentChatId) return
+
+    const el = renderMessage(message)
+    messagesContainer.appendChild(el)
+    messagesContainer.scrollTop = messagesContainer.scrollHeight
 })
 
 wsOn("message_read", (data) => {
     const el = messageElements.get(data.message_id)
     if (!el) return
+    if (el.dataset.authorId !== userId) return
 
-    if (el.dataset.authorId === userId) {
-        el.dataset.readAt = new Date().toISOString()
-        const unread = el.querySelector('.unread')
-        const read = el.querySelector('.read')
+    el.dataset.readAt = new Date().toISOString()
+    const unread = el.querySelector('.unread')
+    const read = el.querySelector('.read')
 
-        if (unread) unread.style.display = "none"
-        if (read) read.style.display = "block"
-    }
+    if (unread) unread.style.display = "none"
+    if (read) read.style.display = "block"
 })
