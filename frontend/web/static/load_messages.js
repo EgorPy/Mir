@@ -72,11 +72,17 @@ function renderMessage(message) {
     read.style.display = "none"
 
     if (String(message.user_id) === userId) {
-        if (message.read_at || el.dataset.readAt) {
+        const readAt = message.read_at || el.dataset.readAt
+        if (readAt) {
             read.style.display = "block"
+            unread.style.display = "none"
         } else {
             unread.style.display = "block"
+            read.style.display = "none"
         }
+    } else {
+        unread.style.display = "none"
+        read.style.display = "none"
     }
 
     messageElements.set(message.id, el)
@@ -161,11 +167,12 @@ wsOn("message_read", (data) => {
     const el = messageElements.get(data.message_id)
     if (!el) return
 
-    el.dataset.readAt = new Date().toISOString()
+    if (el.dataset.authorId === userId) {
+        el.dataset.readAt = new Date().toISOString()
+        const unread = el.querySelector('.unread')
+        const read = el.querySelector('.read')
 
-    const unread = el.querySelector('.unread')
-    const read = el.querySelector('.read')
-
-    if (unread) unread.style.display = "none"
-    if (read) read.style.display = "block"
+        if (unread) unread.style.display = "none"
+        if (read) read.style.display = "block"
+    }
 })
