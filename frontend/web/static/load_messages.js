@@ -72,8 +72,11 @@ function renderMessage(message) {
     read.style.display = "none"
 
     if (String(message.user_id) === userId) {
-        if (message.read_at) read.style.display = "block"
-        else unread.style.display = "block"
+        if (message.read_at || el.dataset.readAt) {
+            read.style.display = "block"
+        } else {
+            unread.style.display = "block"
+        }
     }
 
     messageElements.set(message.id, el)
@@ -157,7 +160,8 @@ wsOn("new_message", (data) => {
 wsOn("message_read", (data) => {
     const el = messageElements.get(data.message_id)
     if (!el) return
-    if (el.dataset.authorId !== userId) return
+
+    el.dataset.readAt = new Date().toISOString()
 
     const unread = el.querySelector('.unread')
     const read = el.querySelector('.read')

@@ -159,7 +159,6 @@ async def message_read(ws: WebSocket, data: dict):
 
     db = AutoDB(cm)
 
-    print(message_id, user_id)
     await db.update_async(Messages,
                           {"read_at": datetime.now().replace(microsecond=0)},
                           {"id": message_id})
