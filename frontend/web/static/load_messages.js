@@ -62,8 +62,13 @@ function renderMessage(message) {
             read.style.display = "none"
         }
     } else {
-        unread.style.display = "none"
-        read.style.display = "none"
+        if (el.dataset.readAt) {
+            read.style.display = "block"
+            unread.style.display = "none"
+        } else {
+            unread.style.display = "none"
+            read.style.display = "none"
+        }
     }
 
     messageElements.set(message.id, el)
@@ -154,6 +159,11 @@ function checkVisibleMessages() {
         if (isElementVisible(el)) {
             wsSend({ type: "message_read", chat_id: currentChatId, message_id: id })
             el.dataset.readAt = new Date().toISOString()
+
+            const unread = el.querySelector('.unread')
+            const read = el.querySelector('.read')
+            if (unread) unread.style.display = "none"
+            if (read) read.style.display = "block"
         }
     }
 }
