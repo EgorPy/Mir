@@ -234,7 +234,7 @@ def get_schema_files():
     return pkgutil.iter_modules([schemas_path])
 
 
-def ensure_schema(skip: bool = True):
+def ensure_schema(skip: bool = False):
     if skip:
         return
     schema_files = get_schema_files()
