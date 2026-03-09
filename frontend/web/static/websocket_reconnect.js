@@ -10,5 +10,5 @@ wsOnStatus((state) => {
     status.textContent = "Подключено"
 
     if (state === "reconnecting")
-    status.textContent = "Переподключение..."
+    status.textContent = "Подключение..."
 })

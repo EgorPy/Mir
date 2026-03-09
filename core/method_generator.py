@@ -171,7 +171,7 @@ class AutoDB:
         columns = ", ".join(values.keys())
         placeholders = ", ".join("?" for _ in values)
         sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
-        logger.debug("INSERT INTO %s VALUES = %s", table, values)
+        logger.debug(sql)
         cursor = self._get_cursor()
         cursor.execute(sql, tuple(values.values()))
         self._get_connection().commit()
@@ -186,7 +186,7 @@ class AutoDB:
             clause = " AND ".join(f"{k} = ?" for k in where)
             sql += f" WHERE {clause}"
             params = list(where.values())
-        logger.debug("SELECT FROM %s WHERE = %s", table, where)
+        logger.debug(sql)
         cursor = self._get_cursor()
         cursor.execute(sql, params)
         rows = cursor.fetchall()

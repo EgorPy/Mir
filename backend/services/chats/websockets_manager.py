@@ -13,7 +13,6 @@ class ConnectionManager:
     async def connect(self, ws: WebSocket, user_id: str):
         self.user_connections[user_id].add(ws)
         self.ws_users[ws] = user_id
-
         await self.emit_user_status(user_id, True)
 
     async def disconnect(self, ws: WebSocket):

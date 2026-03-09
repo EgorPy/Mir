@@ -46,11 +46,10 @@ class WSClient {
             }
             window.WS_NONCE = nonce
 
-            console.log(window.SESSION_ID)
-
             this.send({
                 type: "auth",
-                nonce: window.WS_NONCE
+                nonce: window.WS_NONCE,
+                user_id: userId
             })
 
             while (this.queue.length)
@@ -59,6 +58,9 @@ class WSClient {
 
         this.ws.onmessage = (event) => {
             const data = JSON.parse(event.data)
+
+//            console.log("WS IN: ", data)
+
             const handlers = this.handlers.get(data.type)
             if (!handlers) return
             handlers.forEach(h => h(data))

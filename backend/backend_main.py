@@ -92,7 +92,7 @@ async def subscribe_chat(ws: WebSocket, data: dict):
 
 @events.event("send_message")
 async def send_message(ws, data: dict):
-    chat_id = str(data.get("chat_id"))
+    chat_id = int(data.get("chat_id"))
     text = data.get("text", "").strip()
     if not text or not chat_id:
         return
@@ -111,7 +111,6 @@ async def send_message(ws, data: dict):
         created_at=datetime.now().replace(microsecond=0)
     )
 
-    print(user_id)
     user = await db.select_one_async(Users, id=str(user_id))
 
     if not message:
@@ -181,6 +180,7 @@ async def websocket_endpoint(ws: WebSocket):
         return
 
     nonce = data.get("nonce")
+    user_id = data.get("user_id")
 
     if nonce not in WS_PENDING_NONCES:
         await ws.close()
@@ -190,9 +190,9 @@ async def websocket_endpoint(ws: WebSocket):
 
     session_id = secrets.token_hex(32)
 
-    user_id = session_id  # временно, пока не свяжешь с реальным пользователем
+    # user_id = session_id  # временно, пока не свяжешь с реальным пользователем
 
-    await manager.connect(ws, user_id)
+    await manager.connect(ws, int(user_id))
 
     await manager.send_ws(ws, {
         "type": "auth_ok",
