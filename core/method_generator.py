@@ -178,7 +178,7 @@ class AutoDB:
         row_id = values.get("id") or cursor.lastrowid
         return self.select_one(model, id=row_id)
 
-    def select(self, model: Type[BaseModel], where: Dict[str, Any] | None = None):
+    def select(self, model: Type[BaseModel], where: Dict[str, Any] = None):
         table = _table_name(model)
         sql = f"SELECT * FROM {table}"
         params = []
@@ -220,7 +220,7 @@ class AutoDB:
         self._get_connection().commit()
         return cursor.rowcount
 
-    def execute(self, sql: str, params: tuple | None = None):
+    def execute(self, sql: str, params: tuple = None):
         params = params or ()
         logger.debug("Executing SQL: %s, params = %s", sql, params)
         cursor = self._get_cursor()
@@ -237,7 +237,7 @@ class AutoDB:
         return self.insert(model, **values)
 
     @async_db_method
-    def select_async(self, model: Type[BaseModel], where: Dict[str, Any] | None = None):
+    def select_async(self, model: Type[BaseModel], where: Dict[str, Any] = None):
         return self.select(model, where)
 
     @async_db_method
@@ -253,7 +253,7 @@ class AutoDB:
         return self.delete(model, **where)
 
     @async_db_method
-    def execute_async(self, sql: str, params: tuple | None = None):
+    def execute_async(self, sql: str, params: tuple = None):
         return self.execute(sql, params)
 
 

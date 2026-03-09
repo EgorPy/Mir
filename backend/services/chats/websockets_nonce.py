@@ -8,5 +8,5 @@ def create_nonce(user_id: str):
     return nonce
 
 
-def validate_nonce(nonce: str) -> str | None:
+def validate_nonce(nonce: str):
     return WS_PENDING_NONCES.pop(nonce, None)

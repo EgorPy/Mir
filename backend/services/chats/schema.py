@@ -20,8 +20,8 @@ class Chats(Schema):
     title: str
     public_id: str
     type: str = DBField(default="group")
-    description: str | None = None
-    avatar_url: str | None = None
+    description: str = None
+    avatar_url: str = None
 
 
 class Messages(Schema):
@@ -29,10 +29,10 @@ class Messages(Schema):
 
     id: int = DBField(primary_key=True, autoincrement=True)
     chat_id: str
-    text: str | None = None
+    text: str = None
     author: str
     created_at: str
-    read_at: str | None = None
+    read_at: str = None
     message_type: str = DBField(default="text")
-    media_url: str | None = None
-    forwarded_message_id: int | None = None
+    media_url: str = None
+    forwarded_message_id: int = None

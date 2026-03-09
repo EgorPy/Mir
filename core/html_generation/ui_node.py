@@ -8,8 +8,8 @@ class UINode:
             self,
             type_: ElementType,
             *,
-            width: int | None = None,
-            height: int | None = None,
+            width: int = None,
+            height: int = None,
             props: Optional[dict] = None,
             children: Optional[List["UINode"]] = None,
 

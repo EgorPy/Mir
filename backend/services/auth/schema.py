@@ -18,4 +18,4 @@ class Users(Schema):
     first_name: str
     last_name: str
     password: str
-    avatar_url: str | None = None
+    avatar_url: str = None
