@@ -14,15 +14,11 @@ let currentChatId = null
 let userId = null
 let inputInitialized = false
 let chatState = null
-let isChatOpen = false
 
 const messageElements = new Map()
 
 export async function loadMessages(chatId) {
-    if (currentChatId) await closeChat()
-
     currentChatId = chatId
-    isChatOpen = true
     await wsSend({ type: "subscribe_chat", chat_id: chatId })
 
     chatState = getChatState(currentChatId)
@@ -33,14 +29,6 @@ export async function loadMessages(chatId) {
     insertMessages(messages)
 
     checkVisibleMessages()
-}
-
-export async function closeChat() {
-    if (!currentChatId) return
-    isChatOpen = false
-    await wsSend({ type: "unsubscribe_chat", chat_id: currentChatId })
-    clearMessages()
-    currentChatId = null
 }
 
 export async function fetchMessages(chatId) {
@@ -164,7 +152,7 @@ function isElementVisible(el) {
 }
 
 function checkVisibleMessages() {
-    if (!currentChatId || !isChatOpen) return
+    if (!currentChatId) return
     for (const [id, el] of messageElements) {
         if (el.dataset.authorId === userId) continue
         if (el.dataset.readAt) continue
@@ -182,12 +170,11 @@ function checkVisibleMessages() {
 
 wsOn("new_message", (data) => {
     const message = data.message
-    if (!isChatOpen || message.chat_id != currentChatId) return
+    if (message.chat_id != currentChatId) return
     insertMessage(message)
 })
 
 wsOn("message_read", (data) => {
-    if (!isChatOpen || data.chat_id != currentChatId) return
     const el = messageElements.get(data.message_id)
     if (!el) return
 
