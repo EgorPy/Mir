@@ -20,7 +20,7 @@ const messageElements = new Map()
 export async function loadMessages(chatId) {
     currentChatId = chatId
 
-    wsSend({
+    await wsSend({
         type: "subscribe_chat",
         chat_id: chatId
     })

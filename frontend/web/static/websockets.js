@@ -114,7 +114,7 @@ const protocol = backend.protocol === "https:" ? "wss" : "ws"
 const userId = await getUserId()
 const ws = new WSClient(`${protocol}://${backend.host}/ws`, userId)
 
-export function wsSend(data) {
+export async function wsSend(data) {
     ws.send(data)
 }
 

@@ -235,7 +235,7 @@ def get_schema_files():
 
 
 def ensure_schema(skip: bool = False):
-    if skip:
+    if skip and not SERVER_MODE:
         return
     schema_files = get_schema_files()
     db = AutoDB(cm)
@@ -256,7 +256,7 @@ def start_server():
 
     logger.info(f"BACKEND server started at http://{config.DOMAIN}:{config.BACKEND_PORT}")
     if SERVER_MODE is True:
-        uvicorn.run("backend_main:app", host=config.DOMAIN, port=int(config.BACKEND_PORT), reload=True)
+        uvicorn.run("backend_main:app", host=config.DOMAIN, port=int(config.BACKEND_PORT), reload=False)
     elif DEBUG_PHONE_MODE is False:
         uvicorn.run("backend_main:app", host=config.DOMAIN, port=int(config.BACKEND_PORT), reload=True,
                     ssl_certfile="192.168.1.140+1.pem", ssl_keyfile="192.168.1.140+1-key.pem")

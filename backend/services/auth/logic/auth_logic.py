@@ -50,7 +50,7 @@ class AuthLogic:
     ):
         db = AutoDB(cm)
 
-        exists = await db.select_one_async(email=email)
+        exists = await db.select_one_async(Users, email=email)
         if exists:
             return None
 
