@@ -40,6 +40,21 @@ export async function fetchMessages(chatId) {
     return await response.json()
 }
 
+function updateRead(el, message, read, unread) {
+    if (String(message.user_id) === userId) {
+        if (el.dataset.readAt) {
+            read.style.display = "block"
+            unread.style.display = "none"
+        } else {
+            unread.style.display = "block"
+            read.style.display = "none"
+        }
+    } else {
+        unread.style.display = "none"
+        read.style.display = "none"
+    }
+}
+
 function renderMessage(message) {
     const el = messageTemplate.cloneNode(true)
     el.dataset.messageId = message.id
@@ -53,23 +68,7 @@ function renderMessage(message) {
     const unread = el.querySelector('.unread')
     const read = el.querySelector('.read')
 
-    if (String(message.user_id) === userId) {
-        if (el.dataset.readAt) {
-            read.style.display = "block"
-            unread.style.display = "none"
-        } else {
-            unread.style.display = "block"
-            read.style.display = "none"
-        }
-    } else {
-        if (el.dataset.readAt) {
-            read.style.display = "block"
-            unread.style.display = "none"
-        } else {
-            unread.style.display = "none"
-            read.style.display = "none"
-        }
-    }
+    updateRead(el, message, read, unread)
 
     messageElements.set(message.id, el)
     return el
@@ -162,8 +161,13 @@ function checkVisibleMessages() {
 
             const unread = el.querySelector('.unread')
             const read = el.querySelector('.read')
-            if (unread) unread.style.display = "none"
-            if (read) read.style.display = "block"
+
+            const message = {
+                id,
+                user_id: el.dataset.authorId
+            }
+
+            updateRead(el, message, read, unread)
         }
     }
 }
@@ -181,8 +185,12 @@ wsOn("message_read", (data) => {
     const unread = el.querySelector('.unread')
     const read = el.querySelector('.read')
 
-    if (unread) unread.style.display = "none"
-    if (read) read.style.display = "block"
+    const message = {
+        id: data.message_id,
+        user_id: el.dataset.authorId
+    }
+
+    updateRead(el, message, read, unread)
 
     el.dataset.readAt = new Date().toISOString()
 })
