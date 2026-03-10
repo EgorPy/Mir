@@ -15,7 +15,7 @@ from backend.services.auth.schema import Users
 from backend.services.auth.api.auth import router as auth_router
 from backend.services.chats.service import router as chats_router
 
-from backend.services.chats.websockets_nonce import WS_PENDING_NONCES, create_nonce
+from backend.services.chats.websockets_nonce import create_nonce
 from backend.services.chats.websockets_manager import manager
 from backend.phone_mode import DEBUG_PHONE_MODE, SERVER_MODE
 
@@ -81,7 +81,7 @@ events = WebSocketEventRouter()
 
 @app.get("/ws-nonce")
 async def get_ws_nonce(user_id: str):
-    nonce = create_nonce(user_id)
+    nonce = create_nonce(int(user_id))
     return {"nonce": nonce}
 
 
@@ -186,45 +186,65 @@ async def ping(ws: WebSocket, data: dict):
 async def websocket_endpoint(ws: WebSocket):
     await ws.accept()
 
-    raw = await ws.receive_text()
-    data = json.loads(raw)
-
-    if data.get("type") != "auth":
-        await ws.close()
-        return
-
-    nonce = data.get("nonce")
-    user_id = data.get("user_id")
-
-    if nonce not in WS_PENDING_NONCES:
-        await ws.close()
-        return
-
-    del WS_PENDING_NONCES[nonce]
-
-    session_id = secrets.token_hex(32)
-
-    # user_id = session_id  # временно, пока не свяжешь с реальным пользователем
-
-    await manager.connect(ws, int(user_id))
-
-    await manager.send_ws(ws, {
-        "type": "auth_ok",
-        "session_id": session_id
-    })
+    user_id = None
 
     try:
+        raw = await ws.receive_text()
+        try:
+            data = json.loads(raw)
+        except:
+            await ws.close()
+            return
+
+        if data.get("type") != "auth":
+            await ws.close()
+            return
+
+        nonce = data.get("nonce")
+        user_id = data.get("user_id")
+
+        from backend.services.chats.websockets_nonce import validate_nonce
+
+        real_user_id = validate_nonce(nonce)
+
+        if real_user_id is None or int(real_user_id) != int(user_id):
+            await ws.close()
+            return
+
+        user_id = int(user_id)
+
+        session_id = secrets.token_hex(32)
+
+        await manager.send_ws(ws, {
+            "type": "auth_ok",
+            "session_id": session_id
+        })
+
+        await manager.connect(ws, user_id)
+
+        await manager.emit_user_status(user_id, True)
+
         while True:
             raw = await ws.receive_text()
+
             try:
                 data = json.loads(raw)
             except:
                 continue
+
             event = data.get("type")
+            if not event:
+                continue
+
             await events.dispatch(event, ws, data)
+
     except WebSocketDisconnect:
+        pass
+    finally:
         await manager.disconnect(ws)
-        logger.info(f"WS disconnect {user_id}")
+
+        if user_id is not None:
+            logger.info(f"WS disconnect {user_id}")
 
 
 def get_schema_files():
