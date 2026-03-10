@@ -181,16 +181,12 @@ wsOn("new_message", (data) => {
 wsOn("message_read", (data) => {
     const el = messageElements.get(data.message_id)
     if (!el) return
+    if (el.dataset.readAt) return
+
+    el.dataset.readAt = new Date().toISOString()
 
     const unread = el.querySelector('.unread')
     const read = el.querySelector('.read')
 
-    const message = {
-        id: data.message_id,
-        user_id: el.dataset.authorId
-    }
-
-    updateRead(el, message, read, unread)
-
-    el.dataset.readAt = new Date().toISOString()
+    updateRead(el, { user_id: el.dataset.authorId }, read, unread)
 })
