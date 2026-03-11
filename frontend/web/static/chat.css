@@ -388,7 +388,7 @@
         display: none;
     }
 
-    .actual-chat.active .chat-header {
+    .actual-chat.active #chatHeader {
         display: flex;
     }
 
