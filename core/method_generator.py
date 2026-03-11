@@ -214,9 +214,26 @@ class AutoDB:
         table = _table_name(model)
         clause = " AND ".join(f"{k} = ?" for k in where)
         sql = f"DELETE FROM {table} WHERE {clause}"
-        logger.debug("DELETE FROM %s WHERE = %s", table, where)
+        logger.debug(sql)
         cursor = self._get_cursor()
         cursor.execute(sql, list(where.values()))
+        self._get_connection().commit()
+        return cursor.rowcount
+
+    def delete_in(self, model: Type[BaseModel], **where):
+        table = _table_name(model)
+        clauses = []
+        params = []
+        for key, values in where.items():
+            values = list(values)
+            placeholders = ",".join("?" for _ in values)
+            clauses.append(f"{key} IN ({placeholders})")
+            params.extend(values)
+        clause = " AND ".join(clauses)
+        sql = f"DELETE FROM {table} WHERE {clause}"
+        logger.debug(sql)
+        cursor = self._get_cursor()
+        cursor.execute(sql, params)
         self._get_connection().commit()
         return cursor.rowcount
 
@@ -251,6 +268,10 @@ class AutoDB:
     @async_db_method
     def delete_async(self, model: Type[BaseModel], **where):
         return self.delete(model, **where)
+
+    @async_db_method
+    def delete_in_async(self, model: Type[BaseModel], **where):
+        return self.delete_in(model, **where)
 
     @async_db_method
     def execute_async(self, sql: str, params: tuple = None):

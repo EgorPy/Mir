@@ -5,7 +5,7 @@ import { fetchChatData } from './load_chats.js'
 import { getChatState, setChatStateForce } from './chat_state.js';
 
 const actualChat = document.querySelector('.actual-chat');
-const chatHeader = actualChat.querySelector('.chat-header');
+const chatHeader = actualChat.querySelector('#chatHeader');
 const chatTitleEl = chatHeader.querySelector('.chat-title');
 const closeChatBtn = chatHeader.querySelector('.close-chat-btn');
 const messageInputWrapper = actualChat.querySelector('.chat-input');

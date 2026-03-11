@@ -106,7 +106,7 @@
     <div class="resizer"></div>
 
     <div class="actual-chat">
-        <div class="chat-header" style="display: none;">
+        <div class="chat-header" id="chatHeader" style="display: none;">
             <button class="close-chat-btn">
                 <svg width="24" height="24" viewBox="28 34 16 16" xmlns="http://www.w3.org/2000/svg"
                      style="transform: rotate(-90deg);">
@@ -115,6 +115,10 @@
             </button>
             <img src="../static/favicon.ico" alt="avatar" class="chat-avatar">
             <div class="chat-title">Название чата</div>
+        </div>
+        <div class="chat-header" id="messageOptions">
+<!--            <button id="forwardMessages">Переслать</button>-->
+            <button id="deleteMessages">Удалить</button>
         </div>
         <div class="select-chat">Выберите чат для начала общения.</div>
         <div class="messages-container"></div>
@@ -138,6 +142,7 @@
 <script src="/static/search_chats.js" type="module"></script>
 <script src="/static/search_lens.js" type="module"></script>
 <script src="/static/modal.js" type="module"></script>
+<script src="/static/select_message.js" type="module"></script>
 <script src="/static/chat_info.js" type="module"></script>
 <script src="/static/check_auth.js" type="module"></script>
 <script src="/static/websocket_reconnect.js" type="module"></script>

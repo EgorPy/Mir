@@ -126,6 +126,25 @@ async def send_message(ws, data: dict):
     })
 
 
+@events.event("delete_messages")
+async def delete_messages(ws, data: dict):
+    chat_id = int(data.get("chat_id"))
+
+    db = AutoDB(cm)
+
+    result = await db.delete_in_async(
+        Messages,
+        id=data.get("messages")
+    )
+
+    await manager.send_chat(chat_id, {
+        "type": "messages_deleted",
+        "messages": data.get("messages")
+    })
+
+    return {"ok": True}
+
+
 @events.event("typing")
 async def typing(ws: WebSocket, data: dict):
     chat_id = int(data["chat_id"])

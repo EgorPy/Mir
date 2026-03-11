@@ -257,35 +257,34 @@ async def join(chat_id: str,
     await add_chat_member(chat_id, user_id, connection_manager)
     return {"ok": True}
 
-
-@router.post("/{chat_id}/messages/send")
-async def send_message(
-        chat_id: str,
-        data: MessageCreate,
-        user_id: str = Depends(check_user_session),
-        connection_manager: ConnectionManager = Depends(cm.dependency)
-):
-    db = AutoDB(connection_manager)
-
-    message = await db.insert_async(
-        Messages,
-        chat_id=str(chat_id),
-        text=data.text,
-        author=str(user_id),
-        created_at=datetime.now().replace(microsecond=0)
-    )
-    user = await db.select_one_async(
-        Users,
-        id=str(user_id)
-    )
-
-    if not message:
-        return {"ok": False}
-    message["user_id"] = message.get("author")
-    message["author"] = f"{user.get('first_name')} {user.get('last_name')}"
-
-    await manager.send_chat(chat_id, {
-        "type": "new_message",
-        "message": message
-    })
-    return {"ok": True, "message": message}
+# @router.post("/{chat_id}/messages/send")
+# async def send_message(
+#         chat_id: str,
+#         data: MessageCreate,
+#         user_id: str = Depends(check_user_session),
+#         connection_manager: ConnectionManager = Depends(cm.dependency)
+# ):
+#     db = AutoDB(connection_manager)
+#
+#     message = await db.insert_async(
+#         Messages,
+#         chat_id=str(chat_id),
+#         text=data.text,
+#         author=str(user_id),
+#         created_at=datetime.now().replace(microsecond=0)
+#     )
+#     user = await db.select_one_async(
+#         Users,
+#         id=str(user_id)
+#     )
+#
+#     if not message:
+#         return {"ok": False}
+#     message["user_id"] = message.get("author")
+#     message["author"] = f"{user.get('first_name')} {user.get('last_name')}"
+#
+#     await manager.send_chat(chat_id, {
+#         "type": "new_message",
+#         "message": message
+#     })
+#     return {"ok": True, "message": message}

@@ -11,6 +11,13 @@
     overflow-wrap: break-word;
     word-break: break-word;
     white-space: normal;
+    user-select: none;
+    transition: background 0.2s;
+}
+
+.message.selected {
+    background: var(--color-bg-elev-11);
+    outline: 2px solid var(--color-bg-elev-15);
 }
 
 .message-text {

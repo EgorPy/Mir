@@ -92,6 +92,16 @@ export function insertMessages(messages) {
     checkVisibleMessages()
 }
 
+export function deleteMessages(messages) {
+    for (const id of messages) {
+        const el = messageElements.get(Number(id))
+        if (!el) continue
+        el.remove()
+        messageElements.delete(id)
+    }
+    updateUI([...messageElements.values()])
+}
+
 export function clearMessages() {
     messageElements.clear()
     messagesContainer.innerHTML = ''
@@ -176,6 +186,11 @@ wsOn("new_message", (data) => {
     const message = data.message
     if (message.chat_id != currentChatId) return
     insertMessage(message)
+})
+
+wsOn("messages_deleted", (data) => {
+    const messages = data.messages
+    deleteMessages(messages)
 })
 
 wsOn("message_read", (data) => {

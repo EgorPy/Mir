@@ -199,6 +199,7 @@
 
 .chat-header * {
     font-size: 2rem;
+    user-select: none;
 }
 
 .chat-header .close-chat-btn {
@@ -322,7 +323,22 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    width: 100%
+    width: 100%;
+}
+
+#messageOptions button {
+    font-size: 1rem;
+    background: var(--color-bg-elev-16);
+    border-radius: 5rem;
+    padding: 1rem;
+    border: 2px solid var(--color-white);
+    color: white;
+    transition: background 0.2s;
+    cursor: pointer;
+}
+
+#messageOptions button:hover {
+    background: var(--color-bg-elev-6);
 }
 
 .ws-status {

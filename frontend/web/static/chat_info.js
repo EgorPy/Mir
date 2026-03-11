@@ -5,7 +5,7 @@ import { leaveChat } from '/static/leave_chat.js'
 
 document.addEventListener('click', async (e) => {
     if (e.target.closest('.chat-avatar') || e.target.closest('.chat-title')) {
-        const chatHeader = document.querySelector('.chat-header');
+        const chatHeader = document.querySelector('#chatHeader');
         const chatId = chatHeader?.dataset.chatId;
 
         if (!chatId) {
@@ -115,7 +115,7 @@ function createChatInfoHTML(chat) {
 }
 
 export function setChatHeaderInfo(chatId, title, avatar) {
-    const chatHeader = document.querySelector('.chat-header');
+    const chatHeader = document.querySelector('#chatHeader');
     if (chatHeader) {
         chatHeader.dataset.chatId = chatId;
 
