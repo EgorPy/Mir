@@ -1,0 +1,17 @@
+{
+  "chat": {
+    "delete_chat": "delete_chat",
+    "set_chat_avatar": "set_chat_avatar",
+    "set_chat_title": "set_chat_title"
+  },
+  "message": {
+    "delete_message": "delete_message",
+    "send_message": "send_message"
+  },
+  "chat_members": {
+    "kick_members": "kick_members",
+    "ban_members": "ban_members",
+    "promote_members": "promote_members",
+    "invite_members": "invite_members"
+  }
+}

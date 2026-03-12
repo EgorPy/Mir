@@ -10,9 +10,12 @@
     min-width: 10vw;
     overflow-wrap: break-word;
     word-break: break-word;
-    white-space: normal;
     user-select: none;
     transition: background 0.2s;
+}
+
+.message .message-text {
+    white-space: pre-wrap;
 }
 
 .message.selected {

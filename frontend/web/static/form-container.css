@@ -15,11 +15,11 @@
 }
 
 .form-container input {
-    padding: 14px 20px;
+    padding: 1rem;
+    margin: 1rem;
     background: var(--color-transparent);
     border-radius: 10px;
     border: 2px solid var(--color-white);
-    margin: 1rem;
     color: var(--color-white);
     outline: none;
 }
@@ -52,6 +52,5 @@
 .login-form {
     display: flex;
     flex-direction: column;
+    width: 90%;
 }
-
-

@@ -9,8 +9,10 @@ from core.method_generator import AutoDB, Schema, cm
 from core.config import config
 from core.logger import logger
 
-from backend.services.chats.schema import Messages
+from backend.services.chats.schema import ChatMembers, Messages
 from backend.services.auth.schema import Users
+
+from backend.services.auth.api.auth import check_user_session
 
 from backend.services.auth.api.auth import router as auth_router
 from backend.services.chats.service import router as chats_router
@@ -20,7 +22,7 @@ from backend.services.chats.websockets_manager import manager
 from backend.phone_mode import DEBUG_PHONE_MODE, SERVER_MODE
 
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Depends
 
 from datetime import datetime
 import importlib
@@ -124,6 +126,51 @@ async def send_message(ws, data: dict):
         "type": "new_message",
         "message": message
     })
+
+
+@app.get("/chats/{chat_id}/permissions/{user_id}")
+async def get_permissions(chat_id: int, user_id: int, current_user=Depends(check_user_session)):
+    db = AutoDB(cm)
+
+    member = await db.select_one_async(ChatMembers, chat_id=chat_id, user_id=user_id)
+    if not member:
+        raise HTTPException(status_code=404, detail="User not in chat")
+
+    return {"permissions": member.get("permissions", 0)}
+
+
+@app.post("/chats/{chat_id}/permissions/update")
+async def update_permissions(chat_id: int, data: dict, current_user=Depends(check_user_session)):
+    target_user_id = data.get("user_id")
+    new_permissions = data.get("permissions")
+    if not target_user_id or new_permissions is None:
+        raise HTTPException(400, "Missing parameters")
+
+    db = AutoDB(cm)
+
+    current_member = await db.select_one_async(ChatMembers, chat_id=chat_id, user_id=current_user["id"])
+    if not current_member:
+        raise HTTPException(403, "You are not a member of the chat")
+
+    PERMISSIONS = {}  # TODO: FINISH THIS
+
+    if not (current_member.get("permissions", 0) & (1 << list(PERMISSIONS["chat_members"].keys()).index("promote_members"))):
+        raise HTTPException(403, "You are not allowed to update permissions")
+
+    target_member = await db.select_one_async(ChatMembers, chat_id=chat_id, user_id=target_user_id)
+    if not target_member:
+        raise HTTPException(404, "Target user not in chat")
+
+    await db.update_async(ChatMembers, {"permissions": new_permissions}, {"chat_id": chat_id, "user_id": target_user_id})
+
+    await manager.send_chat(chat_id, {
+        "type": "permissions_updated",
+        "chat_id": chat_id,
+        "user_id": target_user_id,
+        "permissions": new_permissions
+    })
+
+    return {"ok": True}
 
 
 @events.event("delete_messages")

@@ -347,11 +347,12 @@
 }
 
 .form-group input {
-    padding: 10px;
+    width: 90%;
+    padding: 0.5rem 1rem;
     border: 2px solid var(--color-bg-elev-15);
     background: var(--color-bg-elev-1);
-    border-radius: 6px;
-    font-size: 1.5rem;
+    border-radius: 1rem;
+    font-size: 1.2rem;
     color: var(--color-white);
     transition: border-color 0.2s;
 }
@@ -368,7 +369,6 @@
 .modal-footer {
     display: flex;
     justify-content: center;
-    gap: 10px;
     padding-top: 15px;
 }
 

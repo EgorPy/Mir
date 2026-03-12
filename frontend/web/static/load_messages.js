@@ -76,6 +76,7 @@ function renderMessage(message) {
 
 export function insertMessage(message) {
     updateUI([message])
+    console.log(message)
     const el = renderMessage(message)
     messagesContainer.appendChild(el)
     messagesContainer.scrollTop = messagesContainer.scrollHeight
