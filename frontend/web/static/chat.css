@@ -296,6 +296,7 @@
     overflow-y: auto;
     max-height: calc(100% - 4.7rem); /* header + input */
     flex: 1 1 auto;
+    transition: 0.2s;
 }
 
 .chat-header {

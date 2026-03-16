@@ -79,16 +79,26 @@ export function insertMessage(message) {
     console.log(message)
     const el = renderMessage(message)
     messagesContainer.appendChild(el)
-    messagesContainer.scrollTop = messagesContainer.scrollHeight
+    el.scrollIntoView({
+        behavior: "smooth"
+    })
+//    messagesContainer.scrollTop = messagesContainer.scrollHeight
     checkVisibleMessages()
 }
 
 export function insertMessages(messages) {
     updateUI(messages)
+    let lastEl
     messages.forEach(msg => {
         const el = renderMessage(msg)
         messagesContainer.appendChild(el)
+        if (msg == messages.at(-1)) {
+            lastEl = el
+        }
     })
+//    lastEl.scrollIntoView({
+//        behavior: "smooth"
+//    })
     messagesContainer.scrollTop = messagesContainer.scrollHeight
     checkVisibleMessages()
 }
