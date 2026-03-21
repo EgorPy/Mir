@@ -7,7 +7,7 @@ from core.logger import logger
 logger.info("=== Generating actions.js for frontend ===")
 
 app = FastAPI()
-app.include_router(auth.router, prefix="/auth")
+app.include_router(auth.app, prefix="/auth")
 
 actions = inspect_app(app, service_id="auth")
 

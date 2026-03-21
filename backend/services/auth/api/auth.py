@@ -16,11 +16,11 @@ from core.redirects import redirect_on_success
 from core.config import config
 from core.logger import logger
 
-router = APIRouter()
+app = APIRouter()
 cm = ConnectionManager()
 
 
-@router.post("/login", status_code=status.HTTP_200_OK)
+@app.post("/login", status_code=status.HTTP_200_OK)
 @redirect_on_success("/profile")
 async def login(
         email: Annotated[str, Form(min_length=5, max_length=256,
@@ -69,7 +69,7 @@ async def login(
     return response
 
 
-@router.post("/register/", status_code=status.HTTP_201_CREATED)
+@app.post("/register/", status_code=status.HTTP_201_CREATED)
 async def register(
         first_name: Annotated[str, Form(min_length=2, max_length=32, pattern=r"^[^\d]+$")],
         last_name: Annotated[str, Form(min_length=2, max_length=32, pattern=r"^[^\d]+$")],
@@ -174,7 +174,7 @@ async def check_user_session_for_logout(session_id: Optional[str] = Cookie(None)
     return session_id
 
 
-@router.get("/logout/")
+@app.get("/logout/")
 async def logout(session_id: str = Depends(check_user_session_for_logout),
                  connection_manager: ConnectionManager = Depends(cm.dependency)):
     """ Logout endpoint """
@@ -183,14 +183,14 @@ async def logout(session_id: str = Depends(check_user_session_for_logout),
     return {"message": "Logged out"}
 
 
-@router.get("/me")
+@app.get("/me")
 async def get_me(user_id: int = Depends(check_user_session)):
     """ Check if a user is logged in endpoint """
 
     return {"user_id": user_id}
 
 
-@router.get("/name")
+@app.get("/name")
 async def get_name(user_id: int = Depends(check_user_session),
                    connection_manager: ConnectionManager = Depends(cm.dependency)):
     db = AutoDB(connection_manager)

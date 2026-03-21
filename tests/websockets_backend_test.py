@@ -2,14 +2,14 @@ from fastapi import WebSocket, WebSocketDisconnect
 from fastapi.params import Depends
 
 from backend.services.auth.api.auth import check_user_session
-from backend.services.chats.service import router
+from backend.services.chats.service import app
 
 from core.logger import logger
 
 clients = []
 
 
-@router.websocket("/ws")
+@app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket, user_id: str = Depends(check_user_session)):
     logger.info("Websocket started")
     await ws.accept()

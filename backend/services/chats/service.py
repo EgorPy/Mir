@@ -1,17 +1,14 @@
 from core.method_generator import AutoDB, ConnectionManager, cm
 
 from backend.services.auth.api.auth import check_user_session
-from backend.services.chats.websockets_manager import manager
-from backend.services.auth.schema import Users
 from backend.services.chats.schema import *
 
 from fastapi.params import Depends
 from pydantic import BaseModel
 from fastapi import APIRouter
-from datetime import datetime
 from fastapi import status
 
-router = APIRouter()
+app = APIRouter()
 
 
 class Service:
@@ -22,7 +19,7 @@ class Service:
 
 SERVICE = Service(
     name="chats",
-    app=router
+    app=app
 )
 
 
@@ -49,7 +46,7 @@ async def add_chat_member(chat_id: str, user_id: str, connection_manager: Connec
     )
 
 
-@router.get("/list")
+@app.get("/list")
 async def list_chats(
         user_id: str = Depends(check_user_session),
         connection_manager: ConnectionManager = Depends(cm.dependency)
@@ -74,7 +71,7 @@ async def list_chats(
     return chats_dict
 
 
-@router.get("/search/{public_id}")
+@app.get("/search/{public_id}")
 async def search_chats(
         public_id: str,
         user_id: str = Depends(check_user_session),
@@ -100,7 +97,7 @@ async def search_chats(
     return {"ok": True, "chats": [result[0]]}
 
 
-@router.post("/create")
+@app.post("/create")
 async def create_chat(
         data: ChatCreate,
         user_id: str = Depends(check_user_session),
@@ -123,7 +120,7 @@ async def create_chat(
     return {"ok": True, "id": result.get("id", None), "result": result}
 
 
-@router.get("/{chat_id}/info")
+@app.get("/{chat_id}/info")
 async def chat_info(
         chat_id: str,
         user_id: str = Depends(check_user_session),
@@ -147,7 +144,7 @@ INNER JOIN chat_members cm ON u.id = cm.user_id WHERE cm.chat_id = ?""", (chat_i
     }
 
 
-@router.get("/{chat_id}/leave")
+@app.get("/{chat_id}/leave")
 async def leave_chat(
         chat_id: str,
         user_id: str = Depends(check_user_session),
@@ -162,7 +159,7 @@ async def leave_chat(
     return {"ok": True}
 
 
-@router.post("/delete")
+@app.post("/delete")
 async def delete_chat(
         data: ChatDelete,
         user_id: str = Depends(check_user_session),
@@ -202,7 +199,7 @@ class MessageCreate(BaseModel):
     text: str
 
 
-@router.get("/{chat_id}/messages")
+@app.get("/{chat_id}/messages")
 async def get_messages(
         chat_id: str,
         user_id: str = Depends(check_user_session),
@@ -243,48 +240,16 @@ async def get_any_member(chat_id: str,
     return {"ok": True, "is_member": bool(result[0].get("COUNT(id)")), "user_id": user_id}
 
 
-@router.get("/{chat_id}/member")
+@app.get("/{chat_id}/member")
 async def get_member(chat_id: str,
                      user_id: str = Depends(check_user_session),
                      connection_manager: ConnectionManager = Depends(cm.dependency)):
     return await get_any_member(chat_id, user_id, connection_manager)
 
 
-@router.get("/{chat_id}/join/")
+@app.get("/{chat_id}/join/")
 async def join(chat_id: str,
                user_id: str = Depends(check_user_session),
                connection_manager: ConnectionManager = Depends(cm.dependency)):
     await add_chat_member(chat_id, user_id, connection_manager)
     return {"ok": True}
-
-# @router.post("/{chat_id}/messages/send")
-# async def send_message(
-#         chat_id: str,
-#         data: MessageCreate,
-#         user_id: str = Depends(check_user_session),
-#         connection_manager: ConnectionManager = Depends(cm.dependency)
-# ):
-#     db = AutoDB(connection_manager)
-#
-#     message = await db.insert_async(
-#         Messages,
-#         chat_id=str(chat_id),
-#         text=data.text,
-#         author=str(user_id),
-#         created_at=datetime.now().replace(microsecond=0)
-#     )
-#     user = await db.select_one_async(
-#         Users,
-#         id=str(user_id)
-#     )
-#
-#     if not message:
-#         return {"ok": False}
-#     message["user_id"] = message.get("author")
-#     message["author"] = f"{user.get('first_name')} {user.get('last_name')}"
-#
-#     await manager.send_chat(chat_id, {
-#         "type": "new_message",
-#         "message": message
-#     })
-#     return {"ok": True, "message": message}

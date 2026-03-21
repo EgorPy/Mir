@@ -5,7 +5,7 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # do not move down
 
-from backend.services.chats.websockets_nonce import create_nonce
+from backend.tech.websockets.websockets_nonce import create_nonce
 
 from core.method_generator import AutoDB, ConnectionManager, cm
 from core.config import config
@@ -17,7 +17,6 @@ from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, Request
 from datetime import datetime
 from pathlib import Path
-import webbrowser
 import threading
 import traceback
 import uvicorn

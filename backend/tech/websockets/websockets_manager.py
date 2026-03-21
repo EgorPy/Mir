@@ -66,4 +66,23 @@ class ConnectionManager:
                 await self.send_ws(ws, event)
 
 
-manager = ConnectionManager()
+class WebSocketEventRouter:
+
+    def __init__(self):
+        self.handlers = {}
+
+    def event(self, name):
+        def decorator(func):
+            self.handlers[name] = func
+            return func
+
+        return decorator
+
+    async def dispatch(self, name, ws, data):
+        handler = self.handlers.get(name)
+        if handler:
+            await handler(ws, data)
+
+
+ws_manager = ConnectionManager()
+ws_event = WebSocketEventRouter()
