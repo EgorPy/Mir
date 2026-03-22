@@ -17,7 +17,9 @@ class StorageModel(BaseModel):
 @app.post("/storage")
 async def storage(data: StorageModel):
     # print(data)
-    await send_message(bot, config.STORAGE_GROUP_ID, data.text)
+    message = await send_message(bot, config.STORAGE_GROUP_ID, data.text)
+    # print(await message.photo[-1].get_url())
+    print(message.url)
 
 
 def run():
