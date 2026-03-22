@@ -13,6 +13,7 @@ from backend.services.auth.api.auth import app as auth_router
 from backend.services.chats.service import app as chats_router
 from backend.services.chats.permissions import app as permissions_router
 from backend.services.chats.messages import app as messages_router
+from backend.tech.websockets.websockets_connect import app as websockets_router
 
 from backend.phone_mode import DEBUG_PHONE_MODE, SERVER_MODE
 
@@ -52,6 +53,7 @@ app.include_router(auth_router, prefix="/auth", tags=["Auth"])
 app.include_router(chats_router, prefix="/chats", tags=["Chats"])
 app.include_router(permissions_router, tags=["Permissions"])
 app.include_router(messages_router, tags=["Messages"])
+app.include_router(websockets_router, tags=["Websockets"])
 
 
 def get_schema_files():

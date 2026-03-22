@@ -36,6 +36,6 @@ def extract_project_structure(root_path, extensions=None):
 if __name__ == "__main__":
     import json
 
-    project_path = "c:/users/dmitry/MethodGenerator"
+    project_path = "c:/users/dmitry/Mir"
     structure = extract_project_structure(project_path)
     print(json.dumps(structure, indent=2))
