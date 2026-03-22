@@ -1,4 +1,4 @@
-import { openModal, closeModal } from '/static/modal.js';
+import { openModal, closeModal } from '../visual/modal.js';
 
 document.addEventListener('DOMContentLoaded', function() {
     const createGroupBtn = document.getElementById('createGroupBtn');

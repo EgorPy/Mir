@@ -1,4 +1,4 @@
-import { getUserId } from '/static/get_user_id.js'
+import { getUserId } from '../fetch/get_user_id.js'
 
 class WSClient {
     constructor(url, userId) {

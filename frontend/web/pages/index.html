@@ -5,18 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Мир</title>
     <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
-    <link rel="stylesheet" href="../static/style.css">
-    <link rel="stylesheet" href="../static/chat.css">
-    <link rel="stylesheet" href="../static/message.css">
-    <link rel="stylesheet" href="../static/app_header.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/chat.css">
+    <link rel="stylesheet" href="/static/css/message.css">
+    <link rel="stylesheet" href="/static/css/app_header.css">
     <script>window.WS_NONCE = "{{ ws_nonce }}"</script>
-    <script src="/static/config.js" type="module"></script>
-    <script src="/static/mobile_chat_navigation.js" type="module"></script>
-    <script src="/static/load_chats.js" type="module"></script>
-    <script src="/static/create_group.js" type="module"></script>
-    <script src="/static/delete_group.js" type="module"></script>
-    <script src="/static/open_chat.js" type="module"></script>
-    <script src="/static/is_member.js" type="module"></script>
+    <script src="/static/js/config.js" type="module"></script>
+    <script src="/static/js/functional/on_load.js" type="module"></script>
+    <script src="/static/js/visual/mobile_chat_navigation.js" type="module"></script>
+    <script src="/static/js/functional/load_chats.js" type="module"></script>
+    <script src="/static/js/functional/create_group.js" type="module"></script>
+    <script src="/static/js/functional/delete_group.js" type="module"></script>
+    <script src="/static/js/functional/open_chat.js" type="module"></script>
+    <script src="/static/js/fetch/is_member.js" type="module"></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -117,7 +118,7 @@
             <div class="chat-title">Название чата</div>
         </div>
         <div class="chat-header" id="messageOptions">
-<!--            <button id="forwardMessages">Переслать</button>-->
+            <!--            <button id="forwardMessages">Переслать</button>-->
             <button id="deleteMessages">Удалить</button>
         </div>
         <div class="select-chat">Выберите чат для начала общения.</div>
@@ -137,14 +138,14 @@
     <div class="ws-status">Подключение...</div>
 </div>
 
-<script src="/static/resizer.js" type="module"></script>
-<script src="/static/app_header.js"></script>
-<script src="/static/search_chats.js" type="module"></script>
-<script src="/static/search_lens.js" type="module"></script>
-<script src="/static/modal.js" type="module"></script>
-<script src="/static/select_message.js" type="module"></script>
-<script src="/static/chat_info.js" type="module"></script>
-<script src="/static/check_auth.js" type="module"></script>
-<script src="/static/websocket_reconnect.js" type="module"></script>
+<script src="/static/js/visual/resizer.js" type="module"></script>
+<script src="/static/js/functional/app_header.js"></script>
+<script src="/static/js/functional/search_chats.js" type="module"></script>
+<script src="/static/js/visual/search_lens.js" type="module"></script>
+<script src="/static/js/visual/modal.js" type="module"></script>
+<script src="/static/js/functional/select_message.js" type="module"></script>
+<script src="/static/js/functional/chat_info.js" type="module"></script>
+<script src="/static/js/functional/check_auth.js" type="module"></script>
+<script src="/static/js/functional/websocket_reconnect.js" type="module"></script>
 </body>
 </html>

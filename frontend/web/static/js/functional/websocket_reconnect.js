@@ -1,4 +1,4 @@
-import { wsOnStatus } from '/static/websockets.js'
+import { wsOnStatus } from './websockets.js'
 
 const status = document.querySelector(".ws-status")
 

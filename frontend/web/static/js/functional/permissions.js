@@ -1,6 +1,6 @@
 import permissions from "/shared/permissions.json";
 import { wsOn } from "/static/websockets.js";
-import { getChatState, setChatStateForce } from "/static/chat_state.js";
+import { getChatState, setChatStateForce } from "/static/state/chat_state.js";
 
 
 const permissionList = [];

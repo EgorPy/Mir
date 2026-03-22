@@ -1,8 +1,10 @@
 import { sendMessage, loadMessages } from './load_messages.js';
-import { adjustChatHeader } from './chat_title.js'
-import { isMember } from './is_member.js'
+import { adjustChatHeader } from '../visual/chat_title.js'
 import { fetchChatData } from './load_chats.js'
-import { getChatState, setChatStateForce } from './chat_state.js';
+import { isMember } from '../fetch/is_member.js'
+import { getChatsRole } from '../fetch/get_chats_role.js'
+import { getChatState, setChatStateForce } from '../state/chat_state.js'
+import { setUserState } from '../state/user_state.js'
 
 const actualChat = document.querySelector('.actual-chat');
 const chatHeader = actualChat.querySelector('#chatHeader');
@@ -58,6 +60,8 @@ async function doJoinChat() {
         title: chatObject.title,
         members: chatObject.members
     });
+    const chatsRole = await getChatsRole()
+    setUserState("chats_role", chatsRole)
 }
 
 joinChat.addEventListener('click', doJoinChat)

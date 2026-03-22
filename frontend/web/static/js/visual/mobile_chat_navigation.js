@@ -24,5 +24,4 @@
     });
 
     closeBtn.addEventListener('click', closeChatMobile);
-
 })();

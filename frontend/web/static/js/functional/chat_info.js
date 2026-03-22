@@ -1,7 +1,8 @@
-import { BACKEND_URL } from '/static/config.js';
-import { openModal, closeModal } from '/static/modal.js';
-import { getChatState } from '/static/chat_state.js'
-import { leaveChat } from '/static/leave_chat.js'
+import { BACKEND_URL } from '../config.js';
+import { openModal, closeModal } from '../visual/modal.js';
+import { getChatState } from '../state/chat_state.js'
+import { getUserStates } from '../state/user_state.js'
+import { leaveChat } from '../fetch/leave_chat.js'
 
 document.addEventListener('click', async (e) => {
     if (e.target.closest('.chat-avatar') || e.target.closest('.chat-title')) {
@@ -19,11 +20,13 @@ document.addEventListener('click', async (e) => {
 
 async function showChatInfo(chatId) {
     const chat = getChatState(chatId)
-    const modalContent = createChatInfoHTML(chat);
+    const user = getUserStates()
+    const modalContent = createChatInfoHTML(chat, user);
     openModal(modalContent);
     setTimeout(setupModalEventListeners, 0);
     const modalContentElement = modal.querySelector('.modal-content');
     const leaveChatBtn = modalContentElement.querySelector("#leaveChatBtn")
+    if (!leaveChatBtn) return
     leaveChatBtn.addEventListener("click", () => {
         leaveChat(chatId)
     })
@@ -43,7 +46,7 @@ function setupModalEventListeners() {
     }
 }
 
-function createChatInfoHTML(chat) {
+function createChatInfoHTML(chat, user) {
     const createdAt = chat.created_at ? new Date(chat.created_at).toLocaleString() : 'Неизвестно';
 
     let chatTypeText = 'Чат';
@@ -56,6 +59,7 @@ function createChatInfoHTML(chat) {
     }
 
     const defaultAvatar = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'40\' height=\'40\' viewBox=\'0 0 40 40\'%3E%3Ccircle cx=\'20\' cy=\'20\' r=\'20\' fill=\'%23E0E0E0\'/%3E%3Ctext x=\'20\' y=\'25\' font-size=\'16\' text-anchor=\'middle\' fill=\'%23999\' font-family=\'Arial\'%3E%3F%3C/text%3E%3C/svg%3E';
+    const role = user.chats_role.find(user_chat => user_chat.chat_id == chat.id)?.role
 
     return `
         <div class="modal-header">
@@ -70,8 +74,8 @@ function createChatInfoHTML(chat) {
                 </div>
 
                 <div class="chat-info-buttons">
-                    <button class="modal-btn" id="leaveChatBtn">Покинуть</button>
-                    <button class="modal-btn" id="deleteChatBtn" style="display: none;">Удалить</button>
+                    ${(role && (role != "owner")) ? `<button class="modal-btn" id="leaveChatBtn">Покинуть</button>` : ''}
+                    ${(role && (role == "owner")) ? `<button class="modal-btn" id="deleteChatBtn">Удалить</button>` : ''}
                 </div>
 
                 <div class="chat-info-details">

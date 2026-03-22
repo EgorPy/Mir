@@ -1,4 +1,4 @@
-import { BACKEND_URL } from '/static/config.js'
+import { BACKEND_URL } from '/static/js/config.js'
 
 async function checkAuth() {
     try {

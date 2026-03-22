@@ -1,7 +1,7 @@
 import messageTemplateHtml from '/pages/widgets/message.js'
-import { getUserId } from '/static/get_user_id.js'
-import { getChatState } from '/static/chat_state.js'
-import { wsSend, wsOn } from '/static/websockets.js'
+import { getUserId } from '../fetch/get_user_id.js'
+import { getChatState } from '../state/chat_state.js'
+import { wsSend, wsOn } from './websockets.js'
 
 const tempDiv = document.createElement('div')
 tempDiv.innerHTML = messageTemplateHtml

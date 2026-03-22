@@ -1,5 +1,5 @@
-import { wsSend } from '/static/websockets.js'
-import { getUserId } from '/static/get_user_id.js'
+import { wsSend } from './websockets.js'
+import { getUserId } from '../fetch/get_user_id.js'
 
 const container = document.querySelector('.messages-container')
 const messageOptions = document.querySelector("#messageOptions")

@@ -1,8 +1,8 @@
 import chatTemplateHtml from '/pages/widgets/chat.js';
-import { setupMessageInput } from '/static/load_messages.js';
-import { BACKEND_URL } from '/static/config.js';
+import { setupMessageInput } from './load_messages.js';
+import { BACKEND_URL } from '../config.js';
 import { openChat } from './open_chat.js';
-import { getChatState, setChatState } from './chat_state.js';
+import { getChatState, setChatState } from '../state/chat_state.js';
 
 const tempDiv = document.createElement('div');
 tempDiv.innerHTML = chatTemplateHtml;

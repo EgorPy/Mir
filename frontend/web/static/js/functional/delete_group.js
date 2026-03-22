@@ -1,4 +1,4 @@
-import { openModal, closeModal } from '/static/modal.js';
+import { openModal, closeModal } from '../visual/modal.js';
 
 async function handleDeleteGroup() {
     const confirmBtn = document.getElementById('confirmDeleteBtn');

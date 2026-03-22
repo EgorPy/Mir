@@ -247,6 +247,15 @@ async def get_member(chat_id: str,
     return await get_any_member(chat_id, user_id, connection_manager)
 
 
+@app.get("/chats_role")
+async def get_chat_role(user_id: str = Depends(check_user_session),
+                        connection_manager: ConnectionManager = Depends(cm.dependency)):
+    db = AutoDB(cm)
+
+    result = await db.select_async(ChatMembers, {"user_id": user_id})
+    return result
+
+
 @app.get("/{chat_id}/join/")
 async def join(chat_id: str,
                user_id: str = Depends(check_user_session),
