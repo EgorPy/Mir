@@ -1,4 +1,4 @@
-import { BACKEND_URL } from "../static/config.js"
+import { BACKEND_URL } from "../../config.js"
 
 document.querySelector(".login-form").addEventListener("submit", async function(event) {
     event.preventDefault()

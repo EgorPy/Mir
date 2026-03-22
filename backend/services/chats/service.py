@@ -2,6 +2,7 @@ from core.method_generator import AutoDB, ConnectionManager, cm
 
 from backend.services.auth.api.auth import check_user_session
 from backend.services.chats.schema import *
+import backend.services.chats.roles as roles
 
 from fastapi.params import Depends
 from pydantic import BaseModel
@@ -36,13 +37,15 @@ class SearchData(BaseModel):
     public_id: str  # it can be public_id of public chat (channel or group) or email of a user
 
 
-async def add_chat_member(chat_id: str, user_id: str, connection_manager: ConnectionManager = Depends(cm.dependency)):
+async def add_chat_member(chat_id: str, user_id: str, connection_manager: ConnectionManager = Depends(cm.dependency),
+                          role: str = roles.MEMBER):
     db = AutoDB(connection_manager)
 
     await db.insert_async(
         ChatMembers,
         chat_id=chat_id,
-        user_id=user_id
+        user_id=user_id,
+        role=role
     )
 
 
@@ -115,7 +118,7 @@ async def create_chat(
     if not result:
         return {"ok": False}
 
-    await add_chat_member(result.get("id", None), user_id, connection_manager)
+    await add_chat_member(result.get("id", None), user_id, connection_manager, role=roles.OWNER)
 
     return {"ok": True, "id": result.get("id", None), "result": result}
 

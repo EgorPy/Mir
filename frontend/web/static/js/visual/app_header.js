@@ -1,3 +1,5 @@
+import { loadFirstName } from '../fetch/load_first_name.js'
+
 const burgerBtn = document.getElementById('burgerBtn');
 const sidebar = document.getElementById('sidebar');
 const overlay = document.getElementById('overlay');
@@ -20,15 +22,6 @@ function closeSidebar() {
     document.body.style.overflow = '';
 }
 
-async function loadName() {
-    const response = await fetch(`${window.BACKEND_URL}/auth/name`, {
-        credentials: "include"
-    })
-    const result = await response.json()
-    if (!result.name) return
-    profileName.textContent = result.name
-}
-
 burgerBtn.addEventListener('click', toggleSidebar);
 overlay.addEventListener('click', closeSidebar);
 
@@ -43,4 +36,4 @@ sidebarLinks.forEach(link => {
     link.addEventListener('click', closeSidebar);
 });
 
-document.addEventListener("DOMContentLoaded", loadName)
+document.addEventListener("DOMContentLoaded", loadFirstName)

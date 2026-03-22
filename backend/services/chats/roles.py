@@ -1,0 +1,2 @@
+OWNER = "owner"
+MEMBER = "member"
