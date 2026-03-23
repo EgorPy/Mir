@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Мир</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Cormorant+SC:wght@300;400;700&family=Great+Vibes&family=IBM+Plex+Mono:wght@400;700&family=IBM+Plex+Sans:wght@300;400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --black: #080808;
+      --dark: #111111;
+      --dark2: #141414;
+      --white: #f2ede8;
+      --off: rgba(242,237,232,0.5);
+      --accent: #7c3aed;
+      --accent-dim: #5b21b6;
+      --accent-glow: rgba(124,58,237,0.15);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; overflow-x: hidden; }
+
+    body {
+      background: var(--black);
+      color: var(--white);
+      font-family: 'IBM Plex Sans', sans-serif;
+      overflow-x: hidden;
+      max-width: 100%;
+    }
+
+    /* NOISE */
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 9999; opacity: 0.6;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.6rem 3.5rem;
+      background: rgba(8,8,8,0.88);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(242,237,232,0.05);
+    }
+    .nav-logo {
+      font-family: 'Great Vibes', cursive;
+      font-size: 2.2rem; font-weight: 400; letter-spacing: 0.04em;
+      color: var(--white); text-decoration: none;
+    }
+    .nav-logo em { color: var(--accent); font-style: normal; }
+
+    .nav-links { display: flex; gap: 2.8rem; list-style: none; }
+    .nav-links a {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.7rem; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--off); text-decoration: none; transition: color 0.22s;
+    }
+    .nav-links a:hover { color: var(--accent); }
+
+    .nav-cta {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase;
+      background: transparent; color: var(--white);
+      border: 1px solid rgba(124,58,237,0.55);
+      padding: 0.65rem 1.8rem;
+      border-radius: 6px;
+      cursor: pointer; text-decoration: none; display: inline-block;
+      transition: background 0.22s, border-color 0.22s;
+    }
+    .nav-cta:hover { background: var(--accent); border-color: var(--accent); }
+
+    /* HERO */
+    #hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column; justify-content: space-between;
+      padding: 7rem 3.5rem 4rem;
+      position: relative; overflow: hidden;
+    }
+
+    .hero-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: start;
+      flex: 1;
+    }
+
+    .hero-left {}
+    .hero-right {
+      display: flex; flex-direction: column; justify-content: flex-end;
+      padding-bottom: 0.5rem;
+    }
+
+    /* Vertical rule */
+    #hero::before {
+      content: '';
+      position: absolute; top: 0; left: 3.5rem;
+      width: 1px; height: 100%;
+      background: linear-gradient(to bottom, transparent 10%, rgba(124,58,237,0.2) 40%, rgba(124,58,237,0.08) 75%, transparent);
+      pointer-events: none;
+    }
+
+    .hero-glow {
+      position: absolute;
+      width: 900px; height: 900px; border-radius: 50%;
+      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 65%);
+      top: -350px; right: -350px;
+      pointer-events: none;
+      animation: glowPulse 8s ease-in-out infinite;
+    }
+    @keyframes glowPulse {
+      0%,100% { transform: scale(1); opacity: 0.9; }
+      50% { transform: scale(1.15); opacity: 0.5; }
+    }
+
+    .hero-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.68rem; letter-spacing: 0.32em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 2.5rem;
+      opacity: 0; animation: riseIn 0.9s 0.1s forwards;
+    }
+
+    .hero-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: clamp(5.5rem, 14vw, 16rem);
+      line-height: 0.9;
+      letter-spacing: -0.025em;
+      color: var(--white);
+      opacity: 0; animation: riseIn 0.9s 0.28s forwards;
+      position: relative; z-index: 1;
+    }
+    .hero-title .l-italic { font-style: italic; }
+    .hero-title .l-accent { color: var(--accent); font-style: italic; }
+
+    /* Ghost watermark */
+    .hero-watermark {
+      position: absolute;
+      right: -0.1em; bottom: 3rem;
+      font-family: 'Great Vibes', cursive;
+      font-size: clamp(12rem, 28vw, 30rem);
+      font-weight: 400;
+      color: rgba(242,237,232,0.022);
+      line-height: 1; pointer-events: none;
+      user-select: none;
+    }
+
+    .hero-divider {
+      width: 72px; height: 1px;
+      background: linear-gradient(to right, var(--accent), transparent);
+      margin: 2.8rem 0;
+      opacity: 0; animation: riseIn 0.9s 0.45s forwards;
+    }
+
+    .hero-sub {
+      max-width: 500px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.3rem; font-weight: 300; font-style: italic;
+      line-height: 1.75; color: rgba(242,237,232,0.52);
+      opacity: 0; animation: riseIn 0.9s 0.56s forwards;
+    }
+    .hero-sub .mir-name {
+      font-family: 'Great Vibes', cursive;
+      font-size: 1.45em; font-style: normal;
+      color: var(--white);
+    }
+
+    .hero-actions {
+      display: flex; align-items: center; gap: 2.5rem;
+      margin-top: 3rem;
+      opacity: 0; animation: riseIn 0.9s 0.7s forwards;
+    }
+
+    .btn-primary {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase;
+      background: var(--accent); color: var(--white);
+      border: none; padding: 1.1rem 3rem;
+      border-radius: 6px;
+      cursor: pointer; text-decoration: none; display: inline-block;
+      transition: background 0.22s, transform 0.15s, box-shadow 0.22s;
+    }
+    .btn-primary:hover {
+      background: var(--accent-dim); transform: translateY(-2px);
+      box-shadow: 0 10px 36px rgba(124,58,237,0.45);
+    }
+
+    .btn-ghost {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.1rem; font-style: italic; color: var(--off);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(242,237,232,0.18); padding-bottom: 2px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .btn-ghost:hover { color: var(--white); border-color: var(--white); }
+
+    .hero-scroll {
+      display: flex; align-items: center; gap: 1rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase;
+      color: rgba(242,237,232,0.18);
+      opacity: 0; animation: riseIn 0.9s 1.1s forwards;
+      margin-top: 4rem;
+    }
+    .hero-scroll::before {
+      content: '';
+      width: 1px; height: 44px;
+      background: linear-gradient(to bottom, var(--accent), transparent);
+      animation: scrollPulse 2.5s ease-in-out infinite;
+    }
+    @keyframes scrollPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.2; } }
+
+    @keyframes riseIn {
+      from { opacity: 0; transform: translateY(28px); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    /* SECTION COMMONS */
+    .s-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.68rem; letter-spacing: 0.3em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 1rem;
+    }
+    .s-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: clamp(3rem, 5.5vw, 6rem); line-height: 1.05;
+      color: var(--white); margin-bottom: 4rem;
+    }
+    .s-title em { font-style: italic; color: var(--accent); }
+
+    /* FEATURES */
+    #features { padding: 9rem 3.5rem; }
+
+    .features-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1px; background: rgba(242,237,232,0.07);
+    }
+
+    .feature-card {
+      background: var(--dark);
+      padding: 3rem 2.5rem; position: relative; overflow: hidden;
+      transition: background 0.3s;
+    }
+    .feature-card::after {
+      content: ''; position: absolute; top: 0; left: 0;
+      width: 0; height: 2px; background: var(--accent);
+      transition: width 0.4s ease;
+    }
+    .feature-card:hover::after { width: 100%; }
+    .feature-card:hover { background: rgba(124,58,237,0.05); }
+
+    /* CONTRAST NUMBER */
+    .feature-num {
+      font-family: 'Cormorant SC', serif;
+      font-size: 5.5rem; font-weight: 700; line-height: 1;
+      color: rgba(242,237,232,0.18);   /* светлый, но приглушённый — хорошо виден на тёмном */
+      margin-bottom: 1.2rem;
+      transition: color 0.3s, opacity 0.3s;
+    }
+    .feature-card:hover .feature-num {
+      color: var(--accent);
+      opacity: 1;
+    }
+
+    .feature-icon {
+      width: 28px; height: 28px;
+      margin-bottom: 1.1rem; display: block;
+      color: rgba(242,237,232,0.35);
+      transition: color 0.3s;
+    }
+    .feature-card:hover .feature-icon { color: var(--accent); }
+    .feature-icon svg { width: 100%; height: 100%; }
+
+    .feature-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.25rem; font-weight: 700;
+      margin-bottom: 0.7rem; color: var(--white);
+    }
+    .feature-desc {
+      font-size: 0.85rem; line-height: 1.7;
+      color: rgba(242,237,232,0.38);
+    }
+
+    /* STATS — DARK */
+    #stats {
+      background: var(--dark2);
+      border-top: 1px solid rgba(242,237,232,0.06);
+      border-bottom: 1px solid rgba(242,237,232,0.06);
+      padding: 6rem 3.5rem;
+    }
+    .stats-inner {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 1px; background: rgba(242,237,232,0.06);
+    }
+    .stat-item {
+      background: var(--dark2);
+      padding: 3rem 2rem; text-align: center;
+    }
+    .stat-num {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300; font-size: 5rem;
+      color: var(--white); line-height: 1; display: block;
+    }
+    .stat-num em { color: var(--accent); font-style: normal; }
+    .stat-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase;
+      color: rgba(242,237,232,0.28);
+      margin-top: 0.6rem; display: block;
+    }
+
+    /* QUOTE */
+    #quote {
+      padding: 8rem 3.5rem; display: flex; justify-content: center;
+      position: relative; overflow: hidden;
+    }
+    #quote::before {
+      content: '«';
+      position: absolute; left: 2.5rem; top: 3rem;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 20rem; line-height: 1;
+      color: rgba(124,58,237,0.07); pointer-events: none;
+    }
+    .quote-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(1.8rem, 3.2vw, 3rem);
+      font-weight: 300; font-style: italic;
+      line-height: 1.5; color: rgba(242,237,232,0.7);
+      max-width: 890px; text-align: center; position: relative; z-index: 1;
+    }
+    .quote-text strong { font-weight: 700; font-style: normal; color: var(--white); }
+    .quote-text .q-accent { color: var(--accent); font-style: normal; font-weight: 700; }
+    .quote-text .q-mir { font-family: 'Great Vibes', cursive; font-size: 1.25em; font-style: normal; color: var(--white); }
+
+    /* HOW IT WORKS */
+    #how { padding: 9rem 3.5rem; }
+
+    .steps {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 0; margin-top: 4rem; position: relative;
+    }
+    .steps::before {
+      content: ''; position: absolute; top: 1.3rem; left: 12%; right: 12%;
+      height: 1px;
+      background: linear-gradient(to right, rgba(124,58,237,0.5), rgba(124,58,237,0.06));
+    }
+
+    .step { padding: 0 1.5rem; }
+
+    .step-dot {
+      width: 40px; height: 40px;
+      border: 1px solid rgba(124,58,237,0.45);
+      background: var(--black); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Cormorant SC', serif;
+      font-size: 0.95rem; font-weight: 700; color: var(--accent);
+      margin-bottom: 2rem; position: relative; z-index: 1;
+      transition: background 0.25s, border-color 0.25s, color 0.25s;
+    }
+    .step:hover .step-dot { background: var(--accent); color: var(--white); border-color: var(--accent); }
+
+    .step-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.2rem; font-weight: 700;
+      margin-bottom: 0.6rem; color: var(--white);
+    }
+    .step-desc { font-size: 0.85rem; line-height: 1.65; color: rgba(242,237,232,0.38); }
+
+    /* CTA */
+    #cta {
+      margin: 0 3.5rem 8rem;
+      background: var(--dark2);
+      border: 1px solid rgba(242,237,232,0.07);
+      padding: 6rem 5rem;
+      display: flex; align-items: center; justify-content: space-between;
+      position: relative; overflow: hidden;
+    }
+    #cta::before {
+      content: 'Вместе';
+      position: absolute; right: 2rem; bottom: -1.5rem;
+      font-family: 'Great Vibes', cursive; font-weight: 400;
+      font-size: 11rem; color: rgba(242,237,232,0.04);
+      line-height: 1; pointer-events: none;
+    }
+    .cta-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(3rem, 5vw, 5.5rem);
+      font-weight: 300; line-height: 1.05; color: var(--white);
+    }
+    .cta-title em { font-style: italic; color: var(--accent); }
+    .cta-sub {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.15rem; font-style: italic; font-weight: 300;
+      color: var(--off); margin-top: 1rem; max-width: 380px; line-height: 1.6;
+    }
+    .btn-cta {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.8rem; letter-spacing: 0.14em; text-transform: uppercase;
+      background: var(--white); color: var(--black);
+      border: none; padding: 1.2rem 3.2rem;
+      border-radius: 6px;
+      cursor: pointer; text-decoration: none; display: inline-block;
+      white-space: nowrap;
+      transition: background 0.22s, color 0.22s, transform 0.15s, box-shadow 0.22s;
+    }
+    .btn-cta:hover { background: var(--accent); color: var(--white); transform: translateY(-2px); box-shadow: 0 10px 32px rgba(124,58,237,0.4); }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid rgba(242,237,232,0.06);
+      padding: 2.8rem 3.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .footer-logo {
+      font-family: 'Great Vibes', cursive;
+      font-size: 2rem; font-weight: 400; letter-spacing: 0.04em;
+      color: var(--white); text-decoration: none;
+    }
+    .footer-logo em { color: var(--accent); font-style: normal; }
+
+    .footer-links { display: flex; gap: 2.5rem; list-style: none; }
+    .footer-links a {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase;
+      color: rgba(242,237,232,0.22); text-decoration: none; transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--accent); }
+
+    .footer-copy {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem; color: rgba(242,237,232,0.15);
+    }
+
+    /* REVEAL */
+    .reveal {
+      opacity: 0; transform: translateY(36px);
+      transition: opacity 0.75s ease, transform 0.75s ease;
+    }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    /* Кнопка CTA — после появления восстанавливаем её собственные переходы */
+    .btn-cta.visible {
+      transition: background 0.22s, color 0.22s, transform 0.15s, box-shadow 0.22s;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 700px) {
+      nav { padding: 1.2rem 1.5rem; }
+      .nav-links { display: none; }
+      #hero { padding: 10rem 1.5rem 4rem; }
+      #hero::before { display: none; }
+      .hero-body { grid-template-columns: 1fr; gap: 2.5rem; }
+      .hero-watermark { font-size: clamp(6rem, 40vw, 12rem); right: 0; bottom: 2rem; }
+      #features, #how, #quote { padding: 5rem 1.5rem; }
+      #stats { padding: 4rem 1.5rem; }
+      .features-grid { grid-template-columns: 1fr; }
+      .stats-inner { grid-template-columns: repeat(2, 1fr); }
+      .steps { grid-template-columns: repeat(2, 1fr); gap: 2.5rem; }
+      .steps::before { display: none; }
+      #cta { margin: 0 1.5rem 5rem; flex-direction: column; gap: 3rem; padding: 3rem 2rem; overflow: hidden; }
+      #cta::before { font-size: 5rem; bottom: -0.5rem; right: 1rem; }
+      footer { flex-direction: column; gap: 1.5rem; text-align: center; padding: 2rem 1.5rem; }
+      .footer-links { flex-wrap: wrap; justify-content: center; }
+    }
+
+    @media (max-width: 480px) {
+      .hero-title { font-size: clamp(4.5rem, 22vw, 7rem); }
+      .hero-watermark { display: none; }
+      #quote::before { font-size: 10rem; }
+      .stats-inner { grid-template-columns: 1fr 1fr; }
+      .steps { grid-template-columns: 1fr; }
+      #cta { margin: 0 0 4rem; border-left: none; border-right: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a href="/" class="nav-logo">Мир</a>
+    <ul class="nav-links">
+      <li><a href="#features">Возможности</a></li>
+      <li><a href="#how">Как работает</a></li>
+      <li><a href="https://github.com/EgorPy/Mir" target="_blank">GitHub</a></li>
+    </ul>
+    <a href="/register" class="nav-cta">Начать</a>
+  </nav>
+
+  <!-- HERO -->
+  <section id="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-watermark">Мир</div>
+
+<!--    <p class="hero-label">// Открытый мессенджер · Вместе сильнее</p>-->
+
+    <div class="hero-body">
+      <div class="hero-left">
+        <h1 class="hero-title">
+          <span class="l-italic">Люди</span><br>
+          <span class="l-accent">вместе</span><br>
+          <span class="l-italic">здесь</span>
+        </h1>
+      </div>
+      <div class="hero-right">
+        <div class="hero-divider"></div>
+        <p class="hero-sub">
+          <span class="mir-name">Мир</span> объединяет людей — без посредников,<br>
+          без слежки, без рекламы.<br>
+          Просто живое общение.
+        </p>
+        <div class="hero-actions">
+          <a href="/register" class="btn-primary">Присоединиться</a>
+          <a href="/login" class="btn-ghost">Войти →</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-scroll">Прокрути вниз</div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features">
+    <p class="s-label reveal">— Возможности</p>
+    <h2 class="s-title reveal">Всё, что нужно<br>для <em>общения</em></h2>
+
+    <div class="features-grid">
+      <div class="feature-card reveal">
+        <div class="feature-num">01</div>
+        <span class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        </span>
+        <h3 class="feature-title">Мгновенные сообщения</h3>
+        <p class="feature-desc">WebSocket-соединение — сообщения появляются у всех участников в реальном времени, без перезагрузки.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-num">02</div>
+        <span class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </span>
+        <h3 class="feature-title">Безопасная авторизация</h3>
+        <p class="feature-desc">Сессионная аутентификация, bcrypt-хеши паролей. Никто посторонний не войдёт.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-num">03</div>
+        <span class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </span>
+        <h3 class="feature-title">Групповые чаты</h3>
+        <p class="feature-desc">Создавай комнаты, приглашай людей по публичному ID, управляй участниками.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-num">04</div>
+        <span class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </span>
+        <h3 class="feature-title">Поиск чатов</h3>
+        <p class="feature-desc">Найди нужную комнату за секунду — просто введи публичный идентификатор.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-num">05</div>
+        <span class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        </span>
+        <h3 class="feature-title">REST API</h3>
+        <p class="feature-desc">Полноценный FastAPI-бэкенд с авто-документацией. Подключай ботов, свои клиенты, интеграции.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-num">06</div>
+        <span class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+        </span>
+        <h3 class="feature-title">Открытый код</h3>
+        <p class="feature-desc">MIT-лицензия. Разворачивай на своём сервере, форкай, вноси свой вклад.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS — DARK -->
+  <section id="stats">
+    <div class="stats-inner">
+      <div class="stat-item reveal">
+        <span class="stat-num">100<em>%</em></span>
+        <span class="stat-label">Открытый код</span>
+      </div>
+      <div class="stat-item reveal">
+        <span class="stat-num">0<em>₽</em></span>
+        <span class="stat-label">Стоимость</span>
+      </div>
+      <div class="stat-item reveal">
+        <span class="stat-num">&lt;1<em>мс</em></span>
+        <span class="stat-label">Задержка</span>
+      </div>
+      <div class="stat-item reveal">
+        <span class="stat-num">∞</span>
+        <span class="stat-label">Масштабируемость</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUOTE -->
+  <section id="quote">
+    <p class="quote-text reveal">
+      Мессенджер должен <strong>объединять</strong>, а не разделять.<br>
+      <span class="q-mir">Мир</span> создан для тех, кто ценит <br><span class="q-accent">настоящее общение</span> —<br>
+      живое, прямое, без посредников между людьми.
+    </p>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how">
+    <p class="s-label reveal">— Как это работает</p>
+    <h2 class="s-title reveal">Четыре<br><em>простых шага</em></h2>
+
+    <div class="steps">
+      <div class="step reveal">
+        <div class="step-dot">I</div>
+        <h3 class="step-title">Регистрация</h3>
+        <p class="step-desc">Создай аккаунт за несколько секунд — только логин и пароль, ничего лишнего.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-dot">II</div>
+        <h3 class="step-title">Создай чат</h3>
+        <p class="step-desc">Открой новую комнату или найди существующую по публичному ID.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-dot">III</div>
+        <h3 class="step-title">Собери людей</h3>
+        <p class="step-desc">Поделись ID или ссылкой. Твоё сообщество присоединится в один клик.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-dot">IV</div>
+        <h3 class="step-title">Общайся</h3>
+        <p class="step-desc">Сообщения мгновенно. Никакой слежки, никакой рекламы. Только люди.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section id="cta">
+    <div class="reveal">
+      <h2 class="cta-title">Готов быть<br><em>вместе?</em></h2>
+      <p class="cta-sub">Зарегистрируйся за минуту и найди своих людей прямо сейчас.</p>
+    </div>
+    <a href="/register" class="btn-cta reveal">Создать аккаунт →</a>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <a href="#" class="footer-logo">Мир</a>
+    <ul class="footer-links">
+      <li><a href="/login">Войти</a></li>
+      <li><a href="/register">Регистрация</a></li>
+      <li><a href="https://github.com/EgorPy/Mir" target="_blank">GitHub</a></li>
+    </ul>
+    <p class="footer-copy">© 2026 Мир · Open Source</p>
+  </footer>
+
+  <script>
+    const reveals = document.querySelectorAll('.reveal');
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach((e, i) => {
+        if (e.isIntersecting) {
+          setTimeout(() => e.target.classList.add('visible'), i * 70);
+          obs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    reveals.forEach(el => obs.observe(el));
+  </script>
+</body>
+</html>
