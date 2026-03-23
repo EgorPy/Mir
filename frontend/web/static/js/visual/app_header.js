@@ -22,7 +22,9 @@ function closeSidebar() {
     document.body.style.overflow = '';
 }
 
+if (burgerBtn)
 burgerBtn.addEventListener('click', toggleSidebar);
+if (overlay)
 overlay.addEventListener('click', closeSidebar);
 
 document.addEventListener('keydown', (e) => {
@@ -36,4 +38,9 @@ sidebarLinks.forEach(link => {
     link.addEventListener('click', closeSidebar);
 });
 
-document.addEventListener("DOMContentLoaded", loadFirstName)
+async function setFirstName() {
+    const name = await loadFirstName()
+    profileName.textContent = name
+}
+
+document.addEventListener("DOMContentLoaded", setFirstName)

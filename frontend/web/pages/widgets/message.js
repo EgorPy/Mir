@@ -8,6 +8,8 @@ export default `
             <span class="message-favorite-indicator" title="Favorite">&#9733;</span>
         </div>
         <div class="message-text"></div>
+        <div class="message-reactions">
+        </div>
         <div class="message-bottom">
             <span class="message-date"></span>
             <span class="message-read">

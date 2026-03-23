@@ -14,6 +14,7 @@ def generate_config_js():
         "frontend",
         "web",
         "static",
+        "js",
         "config.js"
     )
 

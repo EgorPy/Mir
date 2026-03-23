@@ -75,7 +75,8 @@ function createChatInfoHTML(chat, user) {
 
                 <div class="chat-info-buttons">
                     ${(role && (role != "owner")) ? `<button class="modal-btn" id="leaveChatBtn">Покинуть</button>` : ''}
-                    ${(role && (role == "owner")) ? `<button class="modal-btn" id="deleteChatBtn">Удалить</button>` : ''}
+                    ${(false && role && (role == "owner")) ? `<button class="modal-btn" id="deleteChatBtn">Удалить</button>` : ''}
+                    ${(role && (role == "owner")) ? `<button class="modal-btn" id="settingsChatBtn">Настройки</button>` : ''}
                 </div>
 
                 <div class="chat-info-details">

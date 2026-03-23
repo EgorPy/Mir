@@ -14,6 +14,47 @@
     transition: background 0.2s;
 }
 
+.message .message-reactions {
+    display: flex;
+    align-items: center;
+    font-size: 1.2rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    width: min-content;
+    min-width: 17vw;
+    text-align: center;
+}
+
+pre {
+    margin: 0;
+}
+
+.msg-ascii-art {
+    font-size: 0.35rem;
+}
+
+.msg-code {
+    font-size: 1rem;
+    font-family: monospace;
+}
+
+.message .message-reactions:has(div) {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
+.message .message-reaction {
+    padding: 0.5rem;
+    border-radius: 2rem;
+    cursor: pointer;
+    transition: 0.2s;
+    background: var(--color-bg-elev-11);
+}
+
+.message .message-reaction:hover {
+    background: var(--color-bg-elev-15);
+}
+
 .message .message-text {
     white-space: pre-wrap;
 }
@@ -68,5 +109,8 @@
     .message {
         max-width: 70vw;
     }
-}
 
+    .message .message-reactions {
+        min-width: 70vw;
+    }
+}

@@ -3,6 +3,5 @@ export async function loadFirstName() {
         credentials: "include"
     })
     const result = await response.json()
-    if (!result.name) return
-    profileName.textContent = result.name
+    return result.name
 }

@@ -24,7 +24,6 @@ async def run():
 
     # 1. Generate JS config
     generate_config_js()
-    logger.info("Config JS generated.")
 
     # 2. Site generation: actions.js -> YAML -> HTML
     build_site(manual=False)

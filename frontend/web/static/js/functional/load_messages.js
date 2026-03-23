@@ -55,6 +55,54 @@ function updateRead(el, message, read, unread) {
     }
 }
 
+function escapeHtml(str) {
+    return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+}
+
+function parseSegments(text) {
+    const segments = []
+    const regex = /```(\w+)?[ \n]?([\s\S]*?)```/g
+    let lastIndex = 0
+    let match
+
+    while ((match = regex.exec(text)) !== null) {
+        if (match.index > lastIndex) {
+            const content = text.slice(lastIndex, match.index).trim()
+            if (content) segments.push({ type: "text", content })
+        }
+        segments.push({ type: match[1] ?? "preformatted", content: match[2] })
+        lastIndex = match.index + match[0].length
+    }
+
+    if (lastIndex < text.length) {
+        const content = text.slice(lastIndex).trim()
+        if (content) segments.push({ type: "text", content })
+    }
+
+    return segments
+}
+
+function renderSegments(text) {
+    const segments = parseSegments(text)
+    return segments.map(seg => {
+        switch (seg.type) {
+            case "text":
+                return `<span class="msg-text">${escapeHtml(seg.content)}</span>`
+            case "ascii_art":
+                return `<pre class="msg-ascii-art">${escapeHtml(seg.content)}</pre>`
+            case "code":
+                return `<pre class="msg-code">${escapeHtml(seg.content)}</pre>`
+            case "spoiler":
+                return `<span class="msg-spoiler">${escapeHtml(seg.content)}</span>`
+            default:
+                return `<pre class="msg-preformatted" data-lang="${seg.type}">${escapeHtml(seg.content)}</pre>`
+        }
+    }).join("")
+}
+
 function renderMessage(message) {
     const el = messageTemplate.cloneNode(true)
     el.dataset.messageId = message.id
@@ -63,7 +111,9 @@ function renderMessage(message) {
 
     el.querySelector('.message-author').textContent = message.author
     el.querySelector('.message-date').textContent = formatTime(message.created_at)
-    el.querySelector('.message-text').textContent = message.text
+
+    const textEl = el.querySelector('.message-text')
+    textEl.innerHTML = renderSegments(message.text)
 
     const unread = el.querySelector('.unread')
     const read = el.querySelector('.read')
@@ -76,29 +126,18 @@ function renderMessage(message) {
 
 export function insertMessage(message) {
     updateUI([message])
-    console.log(message)
     const el = renderMessage(message)
     messagesContainer.appendChild(el)
-    el.scrollIntoView({
-        behavior: "smooth"
-    })
-//    messagesContainer.scrollTop = messagesContainer.scrollHeight
+    el.scrollIntoView({ behavior: "smooth" })
     checkVisibleMessages()
 }
 
 export function insertMessages(messages) {
     updateUI(messages)
-    let lastEl
     messages.forEach(msg => {
         const el = renderMessage(msg)
         messagesContainer.appendChild(el)
-        if (msg == messages.at(-1)) {
-            lastEl = el
-        }
     })
-//    lastEl.scrollIntoView({
-//        behavior: "smooth"
-//    })
     messagesContainer.scrollTop = messagesContainer.scrollHeight
     checkVisibleMessages()
 }
@@ -183,12 +222,7 @@ function checkVisibleMessages() {
             const unread = el.querySelector('.unread')
             const read = el.querySelector('.read')
 
-            const message = {
-                id,
-                user_id: el.dataset.authorId
-            }
-
-            updateRead(el, message, read, unread)
+            updateRead(el, { id, user_id: el.dataset.authorId }, read, unread)
         }
     }
 }
@@ -200,8 +234,7 @@ wsOn("new_message", (data) => {
 })
 
 wsOn("messages_deleted", (data) => {
-    const messages = data.messages
-    deleteMessages(messages)
+    deleteMessages(data.messages)
 })
 
 wsOn("message_read", (data) => {
