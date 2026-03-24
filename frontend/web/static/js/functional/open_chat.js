@@ -79,6 +79,7 @@ closeChatBtn.addEventListener('click', () => {
     chatHeader.style.display = 'none';
     messageInputWrapper.style.display = 'none';
     //    messagesContainer.innerHTML = '';
+    messagesContainer.style.display = "none"
     chats.style.display = "block";
 
     const selectChat = actualChat.querySelector('.select-chat');
