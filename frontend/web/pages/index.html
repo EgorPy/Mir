@@ -28,7 +28,7 @@
 <aside class="sidebar" id="sidebar">
     <nav class="sidebar-nav">
         <ul>
-            <li><a href="/profile">Профиль</a></li>
+            <li><button onclick="window.location.href='/profile'">Профиль</button></li>
             <li>
                 <button id="createGroupBtn" class="create-group-btn">Создать группу</button>
             </li>
@@ -121,7 +121,7 @@
             <!--            <button id="forwardMessages">Переслать</button>-->
             <button id="deleteMessages">Удалить</button>
         </div>
-        <div class="select-chat">Выберите чат для начала общения.</div>
+        <div class="select-chat" id="selectChat">Выберите чат для начала общения.</div>
         <div class="messages-container"></div>
         <div class="no-messages-yet">Здесь ещё нет сообщений</div>
         <div class="join-chat">Присоединиться</div>

@@ -114,3 +114,81 @@ pre {
         min-width: 70vw;
     }
 }
+
+.message {
+    padding: 0.6rem 0.9rem;
+    border-radius: 10px;
+    border: 1px solid var(--border-soft);
+    margin: 0.8rem;
+    max-width: 40vw;
+    width: fit-content;
+    min-width: 8vw;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    transition: all 0.2s;
+    animation: msgIn 0.25s ease;
+}
+
+.message:hover {
+    border-color: rgba(124,58,237,0.4);
+    box-shadow: 0 0 20px rgba(124,58,237,0.08);
+}
+
+.message.self {
+    background: rgba(124,58,237,0.12);
+}
+
+.message-text {
+    padding: 0.4rem 0;
+    font-size: 1.2rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.message-author {
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+}
+
+.message-date {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+}
+
+.message-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.message.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+}
+
+pre {
+    margin: 0;
+}
+
+.msg-code {
+    font-family: monospace;
+    font-size: 0.95rem;
+}
+
+@keyframes msgIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .message {
+        max-width: 70vw;
+    }
+}

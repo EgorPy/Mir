@@ -14,6 +14,18 @@ body {
     font-family: sans-serif;
 }
 
+body::before {
+    content: '';
+    position: fixed;
+    width: 800px;
+    height: 800px;
+    background: radial-gradient(circle, rgba(124,58,237,0.12), transparent 60%);
+    top: -300px;
+    right: -300px;
+    pointer-events: none;
+    z-index: 0;
+}
+
 /*@font-face {*/
 /*font-family: 'Cursive';*/
 /*src: url('fonts/GreatVibes/GreatVibes-Regular.ttf') format('truetype');*/
@@ -67,5 +79,3 @@ a::hover {
     font-style: italic;
     font-size: 4rem;
 }
-
-

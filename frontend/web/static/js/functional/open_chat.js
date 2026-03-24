@@ -14,6 +14,8 @@ const messageInputWrapper = actualChat.querySelector('.chat-input');
 const messageInput = messageInputWrapper.querySelector('.message-input');
 const sendBtn = messageInputWrapper.querySelector('.send-message-btn');
 const messagesContainer = actualChat.querySelector('.messages-container');
+const chats = document.querySelector("#chats")
+const selectChat = document.querySelector("#selectChat")
 
 const joinChat = actualChat.querySelector('.join-chat')
 
@@ -23,10 +25,13 @@ export async function openChat(chat) {
     chatHeader.style.display = 'flex';
     chatHeader.setAttribute('data-chat-id', chat.id);
 
+    if (window.innerWidth <= 768) {
+        chats.style.display = "none";
+    }
+
     tempChatId = chat.id
 
     chatTitleEl.textContent = chat.title;
-    const selectChat = actualChat.querySelector('.select-chat');
     if (selectChat) selectChat.style.display = 'none';
 
     const isUserMember = await isMember(chat.id)
@@ -66,13 +71,18 @@ async function doJoinChat() {
 
 joinChat.addEventListener('click', doJoinChat)
 
+if (window.innerWidth <= 768) {
+    selectChat.style.display = "none"
+}
+
 closeChatBtn.addEventListener('click', () => {
     chatHeader.style.display = 'none';
     messageInputWrapper.style.display = 'none';
-    messagesContainer.innerHTML = '';
+    //    messagesContainer.innerHTML = '';
+    chats.style.display = "block";
 
     const selectChat = actualChat.querySelector('.select-chat');
-    if (selectChat) selectChat.style.display = 'block';
+    if (selectChat && window.innerWidth > 768) selectChat.style.display = 'block';
 
     delete actualChat.dataset.chatId;
 });

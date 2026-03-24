@@ -1,1 +1,1 @@
-export default `<div class="message-reaction></div>"`
+export default `<div class="message-reaction"></div>"`

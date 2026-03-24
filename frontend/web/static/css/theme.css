@@ -38,6 +38,8 @@
     --color-success-bg: #EEFFEE;
     --color-danger-bg: #FFEEEE;
     --color-selection: #6A5ACD;
+    --color-chat-hover: rgba(124,58,237,0.08);
+    --color-chat-selected: rgba(124,58,237,0.15);
 
     --overlay-dark-50: #00000080;
     --overlay-dark-30: #0000004D;
@@ -68,4 +70,21 @@
     --overlay-fx-1: #7877C61A;
     --overlay-fx-2: #FF77C614;
     --overlay-fx-3: #78DBFF0D;
+
+    --bg-base: #080808;
+    --bg-1: #111111;
+    --bg-2: #141414;
+    --bg-3: #1a1a1a;
+
+    --text-main: #f2ede8;
+    --text-dim: rgb(242,237,232);
+    --text-faint: rgba(242,237,232,0.25);
+
+    --border-soft: rgba(242,237,232,0.06);
+
+    --accent: #7c3aed;
+    --accent-hover: #5b21b6;
+    --accent-glow: rgba(124,58,237,0.15);
+
+    --danger: #ff4444;
 }

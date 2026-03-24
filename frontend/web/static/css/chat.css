@@ -17,7 +17,7 @@
 
 .actual-chat {
     flex: 1;
-    background: var(--color-bg-elev-1);
+/*    background: var(--color-bg-elev-1);*/
 }
 
 .chats {
@@ -134,6 +134,26 @@
     background: var(--color-bg-elev-15);
 }
 
+.resizer {
+    background: transparent;
+    position: relative;
+}
+
+.resizer::after {
+    content: '';
+    position: absolute;
+    top: 20%;
+    bottom: 20%;
+    left: 50%;
+    width: 5px;
+    background: var(--accent-glow);
+    transform: translateX(-50%);
+}
+
+.resizer:hover::after {
+    background: var(--color-accent);
+}
+
 .chat-info {
     min-width: 0;
     flex: 1;
@@ -149,7 +169,9 @@
 }
 
 .chat {
-    background: var(--color-bg-elev-16);
+/*    background: var(--color-bg-elev-16);*/
+    background: transparent;
+    border-radius: 8px;
     width: 100%;
     box-sizing: border-box;
     cursor: pointer;
@@ -158,11 +180,11 @@
 }
 
 .chat:hover {
-    background: var(--color-bg-elev-6);
+    background: var(--color-chat-hover);
 }
 
 .chat-main.selected .chat {
-    background: var(--color-bg-elev-8);
+    background: var(--color-chat-selected);
 }
 
 .chat .section {
@@ -373,7 +395,7 @@
         width: 100%;
         height: 100%;
         z-index: 998;
-        background: var(--color-bg-elev-1);
+/*        background: var(--color-bg-elev-1);*/
         transition: left 0.25s ease;
     }
 
