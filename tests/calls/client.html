@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Group Audio Call</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: system-ui, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            align-items: flex-start;
+        }
+
+        /* ---------- Левая панель: форма подключения ---------- */
+        .sidebar {
+            width: 280px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .card {
+            background: #1e293b;
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+        }
+
+        h2 { font-size: 1rem; color: #94a3b8; margin-bottom: 0.75rem; }
+        h1 { font-size: 1.25rem; color: #f1f5f9; margin-bottom: 1rem; }
+
+        label { display: block; font-size: 0.75rem; color: #64748b; margin-bottom: 0.25rem; }
+
+        input {
+            width: 100%;
+            padding: 0.5rem 0.7rem;
+            border-radius: 0.4rem;
+            border: 1px solid #334155;
+            background: #0f172a;
+            color: #e2e8f0;
+            font-size: 0.9rem;
+            outline: none;
+            margin-bottom: 0.75rem;
+        }
+        input:focus { border-color: #6366f1; }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 0.6rem;
+            border-radius: 0.4rem;
+            border: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+        .btn-primary { background: #6366f1; color: #fff; }
+        .btn-danger  { background: #ef4444; color: #fff; margin-top: 0.5rem; }
+        .btn-mute    { background: #334155; color: #e2e8f0; margin-top: 0.5rem; }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+            background: #64748b;
+        }
+        .status-dot.green  { background: #4ade80; }
+        .status-dot.yellow { background: #facc15; }
+        .status-dot.red    { background: #f87171; }
+
+        .status-text { font-size: 0.85rem; color: #94a3b8; }
+
+        /* ---------- Лог ---------- */
+        .log {
+            background: #0f172a;
+            border-radius: 0.4rem;
+            padding: 0.5rem;
+            font-family: monospace;
+            font-size: 0.72rem;
+            max-height: 180px;
+            overflow-y: auto;
+            color: #475569;
+        }
+        .log .in  { color: #4ade80; }
+        .log .out { color: #818cf8; }
+        .log .sys { color: #f59e0b; }
+        .log .err { color: #f87171; }
+
+        /* ---------- Правая панель: участники ---------- */
+        .main { flex: 1; }
+
+        .peers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1rem;
+        }
+
+        /* Карточка участника */
+        .peer-card {
+            background: #1e293b;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.6rem;
+            position: relative;
+            border: 2px solid transparent;
+            transition: border-color 0.2s;
+        }
+        .peer-card.speaking { border-color: #4ade80; }
+        .peer-card.muted    { opacity: 0.55; }
+
+        .peer-avatar {
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            background: #334155;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #e2e8f0;
+        }
+
+        .peer-name { font-size: 0.85rem; font-weight: 600; color: #e2e8f0; }
+
+        .peer-status { font-size: 0.7rem; color: #64748b; }
+
+        /* Мини-полоска уровня звука */
+        .peer-meter {
+            width: 100%;
+            height: 4px;
+            background: #0f172a;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .peer-meter-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #4ade80, #facc15);
+            transition: width 0.05s;
+        }
+
+        /* Своя карточка — небольшой бейдж "Вы" */
+        .peer-card.self .peer-avatar { background: #4f46e5; }
+        .you-badge {
+            position: absolute;
+            top: 6px; right: 8px;
+            font-size: 0.6rem;
+            background: #4f46e5;
+            color: #fff;
+            padding: 1px 5px;
+            border-radius: 999px;
+        }
+
+        .empty-state {
+            color: #334155;
+            font-size: 0.9rem;
+            padding: 2rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===================== ЛЕВАЯ ПАНЕЛЬ ===================== -->
+<div class="sidebar">
+    <div class="card">
+        <h1>🎙 Group Call</h1>
+
+        <label>Сервер (WebSocket URL)</label>
+        <input id="serverUrl" value="ws://localhost:8000/ws"/>
+
+        <label>ID комнаты</label>
+        <input id="callId" value="room-001"/>
+
+        <label>Ваш никнейм</label>
+        <input id="peerId" value=""/>
+
+        <button id="btnJoin" class="btn btn-primary">Войти в комнату</button>
+        <button id="btnMute" class="btn btn-mute" style="display:none">🔇 Mute</button>
+        <button id="btnLeave" class="btn btn-danger" style="display:none">📵 Покинуть</button>
+    </div>
+
+    <div class="card">
+        <h2>Статус</h2>
+        <div>
+            <span class="status-dot" id="statusDot"></span>
+            <span class="status-text" id="statusText">Не подключён</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Лог</h2>
+        <div id="log" class="log"></div>
+    </div>
+</div>
+
+<!-- ===================== ПРАВАЯ ПАНЕЛЬ ===================== -->
+<div class="main">
+    <h1 style="margin-bottom:1rem; font-size:1.1rem; color:#94a3b8">
+        Участники комнаты
+    </h1>
+    <div id="peersGrid" class="peers-grid">
+        <div class="empty-state">Вы ещё не подключились</div>
+    </div>
+</div>
+
+<script>
+    // =============================================================================
+    // Константы
+    // =============================================================================
+
+    const CHUNK_MS   = 100;   // интервал нарезки чанков MediaRecorder (мс)
+    const PING_MS    = 15000; // интервал keep-alive пинга
+
+    // =============================================================================
+    // Глобальное состояние
+    // =============================================================================
+
+    let ws            = null;
+    let myPeerId      = "";
+    let isMuted       = false;
+    let mediaRecorder = null;
+    let localStream   = null;
+    let audioCtx      = null;
+
+    /**
+     * peers: Map<peerId, PeerState>
+     *
+     * PeerState {
+     *   mediaSource: MediaSource | null,
+     *   sourceBuffer: SourceBuffer | null,
+     *   queue: ArrayBuffer[],       // очередь чанков, ждущих appendBuffer
+     *   audio: HTMLAudioElement,    // <audio autoplay> для воспроизведения
+     *   muted: boolean,
+     *   cardEl: HTMLElement,        // DOM-карточка участника
+     *   meterEl: HTMLElement,       // DOM полоска уровня звука
+     *   speakingTimer: number|null  // таймер сброса анимации "говорит"
+     * }
+     *
+     * Каждый участник получает СВОЙ независимый MediaSource + SourceBuffer.
+     * Это критично: нельзя смешивать чанки от разных людей в один буфер —
+     * WebM-заголовки (EBML) у каждого участника свои, и браузер запутается.
+     */
+    const peers = new Map();
+
+    // =============================================================================
+    // DOM хелперы
+    // =============================================================================
+
+    const logEl      = document.getElementById("log");
+    const statusDot  = document.getElementById("statusDot");
+    const statusText = document.getElementById("statusText");
+    const peersGrid  = document.getElementById("peersGrid");
+    const btnJoin    = document.getElementById("btnJoin");
+    const btnMute    = document.getElementById("btnMute");
+    const btnLeave   = document.getElementById("btnLeave");
+
+    function log(text, type = "sys") {
+        const d = document.createElement("div");
+        d.className = type;
+        d.textContent = `${new Date().toLocaleTimeString()} ${text}`;
+        logEl.appendChild(d);
+        logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function setStatus(text, color = "") {
+        statusText.textContent = text;
+        statusDot.className    = "status-dot " + color;
+    }
+
+    // =============================================================================
+    // UI карточки участников
+    // =============================================================================
+
+    function addPeerCard(peerId, isSelf = false) {
+        // Убираем заглушку "пусто", если есть
+        const empty = peersGrid.querySelector(".empty-state");
+        if (empty) empty.remove();
+
+        const card = document.createElement("div");
+        card.className  = "peer-card" + (isSelf ? " self" : "");
+        card.dataset.id = peerId;
+
+        const initials = peerId.slice(0, 2).toUpperCase();
+
+        card.innerHTML = `
+    ${isSelf ? '<span class="you-badge">Вы</span>' : ""}
+    <div class="peer-avatar">${initials}</div>
+    <div class="peer-name">${escapeHtml(peerId)}</div>
+    <div class="peer-status" id="ps-${peerId}">в эфире</div>
+    <div class="peer-meter"><div class="peer-meter-bar" id="pm-${peerId}"></div></div>
+  `;
+
+        peersGrid.appendChild(card);
+        return card;
+    }
+
+    function removePeerCard(peerId) {
+        const card = peersGrid.querySelector(`[data-id="${peerId}"]`);
+        if (card) card.remove();
+        if (peersGrid.children.length === 0) {
+            peersGrid.innerHTML = '<div class="empty-state">Комната пуста</div>';
+        }
+    }
+
+    function setPeerSpeaking(peerId, level) {
+        // level 0..100 — уровень входящего аудио
+        const bar  = document.getElementById("pm-" + peerId);
+        const card = peersGrid.querySelector(`[data-id="${peerId}"]`);
+        if (!bar || !card) return;
+
+        //        console.log(level)
+
+        bar.style.width = level + "%";
+
+        // Подсвечиваем карточку если говорит (level > 5)
+        if (level > 5) {
+            card.classList.add("speaking");
+            setTimeout(() => {card.classList.remove("speaking")}, 300)
+        }
+    }
+
+    function escapeHtml(s) {
+        return s.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+    }
+
+    // =============================================================================
+    // Подключение
+    // =============================================================================
+
+    async function joinCall() {
+        const serverUrl = document.getElementById("serverUrl").value.trim();
+        const callId    = document.getElementById("callId").value.trim();
+        myPeerId        = document.getElementById("peerId").value.trim();
+
+        if (!callId || !myPeerId) {
+            setStatus("Заполни ID комнаты и никнейм", "red");
+            return;
+        }
+
+        // 1. Получаем доступ к микрофону
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    sampleRate: 48000,
+                },
+                video: false,
+            });
+            log("Микрофон захвачен");
+        } catch (e) {
+            setStatus("Нет доступа к микрофону", "red");
+            return;
+        }
+
+        // 2. Открываем WebSocket
+        const url = `${serverUrl}/${callId}/${myPeerId}`;
+        log(`Подключаюсь: ${url}`);
+        setStatus("Подключение...", "yellow");
+
+        ws = new WebSocket(url);
+        ws.binaryType = "arraybuffer";
+
+        ws.onopen  = () => { log("WS открыт"); startRecording(); };
+        ws.onclose = (e) => { log(`WS закрыт (${e.code})`); handleDisconnect(); };
+        ws.onerror = ()  => { log("WS ошибка", "err"); setStatus("Ошибка соединения", "red"); };
+
+        ws.onmessage = (ev) => {
+            if (typeof ev.data === "string") {
+                handleSignaling(JSON.parse(ev.data));
+            } else {
+                handleIncomingAudio(ev.data);
+            }
+        };
+
+        btnJoin.disabled = true;
+        btnMute.style.display  = "block";
+        btnLeave.style.display = "block";
+    }
+
+    // =============================================================================
+    // Запись и отправка микрофона
+    // =============================================================================
+
+    function getSupportedMime() {
+        return ["audio/webm;codecs=opus","audio/ogg;codecs=opus","audio/webm"]
+            .find(t => MediaRecorder.isTypeSupported(t)) || "";
+    }
+
+    function startRecording() {
+        const mime = getSupportedMime();
+        log(`Кодек: ${mime || "auto"}`);
+
+        mediaRecorder = new MediaRecorder(localStream, mime ? { mimeType: mime } : {});
+
+        mediaRecorder.ondataavailable = async (e) => {
+            if (e.data.size > 0 && ws?.readyState === WebSocket.OPEN && !isMuted) {
+                const buf = await e.data.arrayBuffer();
+                ws.send(buf);
+                log(`→ ${buf.byteLength}b`, "out");
+            }
+        };
+
+        mediaRecorder.start(CHUNK_MS);
+
+        // Визуализация своего уровня звука
+        startLocalMeter();
+
+        // Добавляем свою карточку
+        addPeerCard(myPeerId, true);
+        setStatus(`В эфире: ${myPeerId}`, "green");
+    }
+
+    // Анализатор звука для своей карточки (не влияет на передачу)
+    function startLocalMeter() {
+        audioCtx = new AudioContext();
+        const src = audioCtx.createMediaStreamSource(localStream);
+        const an  = audioCtx.createAnalyser();
+        an.fftSize = 256;
+        src.connect(an);
+
+        const buf = new Uint8Array(an.frequencyBinCount);
+        function tick() {
+            an.getByteFrequencyData(buf);
+            const avg = buf.reduce((a, b) => a + b, 0) / buf.length;
+            setPeerSpeaking(myPeerId, Math.min(100, avg / 4));
+            requestAnimationFrame(tick);
+        }
+        tick();
+    }
+
+    // =============================================================================
+    // Входящее аудио — разбор фрейма и маршрутизация по участнику
+    // =============================================================================
+
+    /**
+     * Формат пакета от сервера:
+     *   [0]        — длина peer_id (1 байт)
+     *   [1..N]     — peer_id (UTF-8)
+     *   [N+1..]    — аудио (Opus/WebM)
+     */
+    function parseFrame(ab) {
+        const view   = new DataView(ab);
+        const idLen  = view.getUint8(0);               // длина ID
+        const idBuf  = ab.slice(1, 1 + idLen);         // байты ID
+        const audio  = ab.slice(1 + idLen);            // аудио
+        const peerId = new TextDecoder().decode(idBuf);
+        return { peerId, audio };
+    }
+
+    function handleIncomingAudio(ab) {
+        const { peerId, audio } = parseFrame(ab);
+        log(`← ${peerId} ${audio.byteLength}b`, "in");
+
+        // Визуальный отклик — уровень звука (упрощённо: по размеру пакета)
+        // Настоящий анализ потребовал бы декодирования Opus, что дорого.
+        // Размер пакета хорошо коррелирует с громкостью.
+        const level = Math.min(100, (audio.byteLength / 500) * 100);
+        setPeerSpeaking(peerId, level);
+
+        const peer = peers.get(peerId);
+        if (!peer) return; // участник ещё не зарегистрирован сигналом peer_joined
+
+        peer.queue.push(audio);
+        flushQueue(peerId);
+    }
+
+    // =============================================================================
+    // MediaSource / SourceBuffer на каждого участника
+    // =============================================================================
+
+    /**
+     * Почему отдельный MSE на каждого?
+     *
+     * MediaRecorder упаковывает аудио в WebM-контейнер. Каждый поток начинается
+     * с EBML-заголовка (метаданные о кодеке, частоте дискретизации и т.д.).
+     * Если смешать чанки двух участников в один SourceBuffer — браузер получит
+     * два конкурирующих заголовка и сломается. Поэтому у каждого участника:
+     *   - свой <audio autoplay>
+     *   - свой MediaSource
+     *   - свой SourceBuffer
+     *   - своя очередь (queue)
+     */
+    function initPeerAudio(peerId) {
+        const audio = document.createElement("audio");
+        audio.autoplay = true;
+        audio.style.display = "none";
+        document.body.appendChild(audio);
+
+        const ms = new MediaSource();
+        audio.src = URL.createObjectURL(ms);
+
+        const peer = {
+            mediaSource:   ms,
+            sourceBuffer:  null,
+            queue:         [],
+            audio,
+            muted:         false,
+            cardEl:        null,
+            meterEl:       null,
+            speakingTimer: null,
+        };
+        peers.set(peerId, peer);
+
+        ms.addEventListener("sourceopen", () => {
+            try {
+                const mime = getSupportedMime() || "audio/webm;codecs=opus";
+                const sb   = ms.addSourceBuffer(mime);
+                sb.mode    = "sequence";  // чанки идут один за другим, без временны́х меток
+
+                peer.sourceBuffer = sb;
+
+                sb.addEventListener("updateend", () => {
+                    flushQueue(peerId);
+                    if (audio.paused) audio.play().catch(() => {});
+                });
+
+                // Отдаём накопившееся за время инициализации
+                flushQueue(peerId);
+            } catch (e) {
+                log(`MSE init error (${peerId}): ${e.message}`, "err");
+            }
+        });
+    }
+
+    function flushQueue(peerId) {
+        const peer = peers.get(peerId);
+        if (!peer?.sourceBuffer || peer.sourceBuffer.updating || peer.queue.length === 0) return;
+
+        const chunk = peer.queue.shift();
+        try {
+            peer.sourceBuffer.appendBuffer(chunk);
+        } catch (e) {
+            if (e.name === "QuotaExceededError") {
+                // Буфер переполнен — удаляем старые данные (оставляем последние 5 сек)
+                const sb  = peer.sourceBuffer;
+                const end = sb.buffered.length ? sb.buffered.end(0) - 5 : 0;
+                if (end > 0) sb.remove(0, end);
+            } else {
+                log(`appendBuffer error (${peerId}): ${e.name}`, "err");
+            }
+        }
+    }
+
+    function destroyPeerAudio(peerId) {
+        const peer = peers.get(peerId);
+        if (!peer) return;
+
+        clearTimeout(peer.speakingTimer);
+        peer.queue = [];
+
+        try {
+            if (peer.mediaSource?.readyState === "open") peer.mediaSource.endOfStream();
+        } catch (_) {}
+
+        peer.audio.src = "";
+        peer.audio.remove();
+        peers.delete(peerId);
+    }
+
+    // =============================================================================
+    // Сигнальные сообщения
+    // =============================================================================
+
+    function handleSignaling(msg) {
+        log(`← [${msg.type}]`);
+
+        switch (msg.type) {
+
+            case "joined": {
+                // Сервер прислал список всех, кто уже в комнате (включая нас)
+                // Инициализируем аудио-пайплайн для каждого существующего участника
+                for (const pid of msg.peers) {
+                    if (pid === myPeerId) continue;  // себя не слушаем
+                    initPeerAudio(pid);
+                    const card = addPeerCard(pid);
+                    peers.get(pid).cardEl = card;
+                }
+                log(`В комнате: ${msg.peers.join(", ")}`);
+                break;
+            }
+
+            case "peer_joined": {
+                const pid = msg.peer_id;
+                if (pid === myPeerId) break;
+                initPeerAudio(pid);
+                const card = addPeerCard(pid);
+                peers.get(pid).cardEl = card;
+                log(`+ ${pid} вошёл`);
+                break;
+            }
+
+            case "peer_left": {
+                const pid = msg.peer_id;
+                destroyPeerAudio(pid);
+                removePeerCard(pid);
+                log(`- ${pid} вышел`);
+                break;
+            }
+
+            case "peer_muted": {
+                const pid  = msg.peer_id;
+                const card = peersGrid.querySelector(`[data-id="${pid}"]`);
+                const ps   = document.getElementById("ps-" + pid);
+                if (card) card.classList.toggle("muted", msg.muted);
+                if (ps)   ps.textContent = msg.muted ? "🔇 замьючен" : "в эфире";
+                break;
+            }
+
+            case "error":
+                log("Ошибка: " + msg.message, "err");
+                setStatus("Ошибка: " + msg.message, "red");
+                break;
+
+            case "pong":
+                break;
+        }
+    }
+
+    // =============================================================================
+    // Управление звонком
+    // =============================================================================
+
+    function toggleMute() {
+        isMuted = !isMuted;
+        btnMute.textContent = isMuted ? "🎙 Unmute" : "🔇 Mute";
+
+        const statusEl = document.getElementById("ps-" + myPeerId);
+        if (statusEl) statusEl.textContent = isMuted ? "🔇 замьючен" : "в эфире";
+
+        ws?.send(JSON.stringify({ type: "mute", muted: isMuted }));
+        log(isMuted ? "Muted" : "Unmuted");
+    }
+
+    function leaveCall() {
+        // Останавливаем микрофон
+        if (mediaRecorder?.state !== "inactive") {
+            mediaRecorder.stop();
+            localStream.getTracks().forEach(t => t.stop());
+            mediaRecorder = null;
+        }
+        if (audioCtx) { audioCtx.close(); audioCtx = null; }
+
+        // Удаляем все аудио-пайплайны
+        for (const pid of [...peers.keys()]) {
+            if (pid !== myPeerId) destroyPeerAudio(pid);
+        }
+        peers.clear();
+
+        ws?.close(1000, "user left");
+        ws = null;
+
+        handleDisconnect();
+    }
+
+    function handleDisconnect() {
+        setStatus("Отключён", "");
+        btnJoin.disabled       = false;
+        btnMute.style.display  = "none";
+        btnLeave.style.display = "none";
+        peersGrid.innerHTML    = '<div class="empty-state">Вы не в комнате</div>';
+    }
+
+    // =============================================================================
+    // Keep-alive ping
+    // =============================================================================
+
+    setInterval(() => {
+        if (ws?.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: "ping" }));
+        }
+    }, PING_MS);
+
+    // =============================================================================
+    // Навешиваем события
+    // =============================================================================
+
+    btnJoin.addEventListener("click",  joinCall);
+    btnMute.addEventListener("click",  toggleMute);
+    btnLeave.addEventListener("click", leaveCall);
+</script>
+</body>
+</html>
