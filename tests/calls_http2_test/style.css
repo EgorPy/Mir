@@ -51,6 +51,15 @@ body::after {
 
 .shell { width: 440px; position: relative; z-index: 1; }
 
+#mic-select {
+    width: 100%;
+    background: var(--surface);
+    border-radius: 1rem;
+    padding: 14px;
+    color: white;
+    cursor: pointer;
+}
+
 /* ── Join screen ─────────────────────────────────────────────────── */
 
 #join-screen {

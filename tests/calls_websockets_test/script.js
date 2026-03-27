@@ -7,6 +7,7 @@ let isMuted = false;
 let mediaRecorder = null;
 let localStream = null;
 let audioCtx = null;
+let meterActive = false;
 
 const RECORD_MIME = (() => {
     const candidates = [
@@ -143,8 +144,13 @@ async function joinCall() {
     peersGrid.innerHTML = "";
 
     try {
+        const deviceId = document.getElementById("mic-select").value;
         localStream = await navigator.mediaDevices.getUserMedia({
-            audio: { echoCancellation: true, noiseSuppression: true },
+            audio: {
+                deviceId: deviceId ? { exact: deviceId } : undefined,
+                echoCancellation: true,
+                noiseSuppression: true,
+            },
             video: false,
         });
     } catch (e) {
@@ -190,28 +196,26 @@ function startRecording() {
 function startLocalMeter() {
     if (!audioCtx) return;
 
+    meterActive = false; // останавливаем предыдущий tick если был
+    const myActive = {}; // уникальный токен для этого запуска
+    meterActive = myActive;
+
     const source = audioCtx.createMediaStreamSource(localStream);
     const analyser = audioCtx.createAnalyser();
-
     analyser.fftSize = 256;
     analyser.smoothingTimeConstant = 0.8;
-
     source.connect(analyser);
 
     const data = new Uint8Array(analyser.frequencyBinCount);
     const fill = document.getElementById("vol-fill");
 
     function tick() {
+        if (meterActive !== myActive) return; // нас заменили — выходим
         analyser.getByteFrequencyData(data);
-
         let sum = 0;
         for (let i = 0; i < data.length; i++) sum += data[i];
-
-        const avg = sum / data.length;
-        const level = isMuted ? 0 : Math.min(100, avg * 2);
-
+        const level = isMuted ? 0 : Math.min(100, (sum / data.length) * 2);
         fill.style.width = level + "%";
-
         requestAnimationFrame(tick);
     }
 
@@ -344,14 +348,6 @@ function handleSignaling(msg) {
     }
 }
 
-function resetPeerAudio(peerId) {
-    const p = peers.get(peerId);
-    if (!p) return;
-
-    p.playing = true;
-    p.nextPlayTime = 0; // сбрасываем таймлайн
-}
-
 function toggleMute() {
     if (!localStream) return;
 
@@ -420,12 +416,67 @@ function handleDisconnect() {
     fillRandomInputs();
 }
 
+async function populateMicList() {
+    // Сначала запрашиваем разрешение — без него браузер скрывает labels
+    try {
+        const tmp = await navigator.mediaDevices.getUserMedia({ audio: true });
+        tmp.getTracks().forEach(t => t.stop());
+    } catch {}
+
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const select = document.getElementById("mic-select");
+
+    select.innerHTML = "";
+    devices
+        .filter(d => d.kind === "audioinput")
+        .forEach(d => {
+        const opt = document.createElement("option");
+        opt.value = d.deviceId;
+        opt.textContent = d.label || `Микрофон ${d.deviceId.slice(0, 6)}`;
+        select.appendChild(opt);
+    });
+}
+
+
 setInterval(() => {
     if (ws?.readyState === 1) {
         ws.send(JSON.stringify({ type: "ping" }));
     }
 }, PING_MS);
 
+populateMicList();
+
+document.getElementById("mic-select").addEventListener("change", async () => {
+    if (!localStream) return; // не в звонке — ничего не делаем
+
+    const deviceId = document.getElementById("mic-select").value;
+
+    try {
+        const newStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+                deviceId: deviceId ? { exact: deviceId } : undefined,
+                echoCancellation: true,
+                noiseSuppression: true,
+            },
+            video: false,
+        });
+
+        // Останавливаем старые треки
+        localStream.getTracks().forEach(t => t.stop());
+        localStream = newStream;
+
+        // Перезапускаем запись с новым стримом
+        if (mediaRecorder && mediaRecorder.state !== "inactive") {
+            mediaRecorder.stop();
+        }
+        startRecording();
+
+    } catch (e) {
+        alert("Не удалось переключить микрофон: " + e.message);
+    }
+});
+
+navigator.mediaDevices.addEventListener("devicechange", populateMicList);
 btnJoin.addEventListener("click", joinCall);
 btnMute.addEventListener("click", toggleMute);
 btnLeave.addEventListener("click", leaveCall);
