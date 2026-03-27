@@ -205,13 +205,10 @@ function startLocalMeter() {
         analyser.getByteFrequencyData(data);
 
         let sum = 0;
-        for (let i = 0; i < data.length; i++) {
-            sum += data[i];
-        }
+        for (let i = 0; i < data.length; i++) sum += data[i];
 
         const avg = sum / data.length;
-
-        const level = Math.min(100, avg * 2);
+        const level = isMuted ? 0 : Math.min(100, avg * 2);
 
         fill.style.width = level + "%";
 
@@ -233,9 +230,7 @@ function handleIncomingAudio(ab) {
     const { peerId, audio } = parseFrame(ab);
 
     const p = peers.get(peerId);
-    if (!p) return;
-
-    if (!p.queue) p.queue = [];
+    if (!p || !p.playing) return;
 
     p.queue.push(audio);
     flushQueue(peerId);
@@ -245,50 +240,79 @@ function handleIncomingAudio(ab) {
 
 function initPeerAudio(peerId) {
     let p = peers.get(peerId);
-
     if (!p) {
-        p = { el: null, queue: [] };
+        p = { el: null };
         peers.set(peerId, p);
     }
 
-    if (p.audio) return;
+    p.queue = [];
+    p.sourceBuffer = null;
+    p.mediaSource = null;
+    p.playing = true;
 
     const audio = document.createElement("audio");
     audio.autoplay = true;
+    audio.playsInline = true;
     document.body.appendChild(audio);
+    p.audio = audio;
 
     const ms = new MediaSource();
+    p.mediaSource = ms;
     audio.src = URL.createObjectURL(ms);
 
-    p.audio = audio;
-    p.mediaSource = ms;
-    p.sourceBuffer = null;
-    p.queue = [];
-
     ms.addEventListener("sourceopen", () => {
-        const sb = ms.addSourceBuffer(RECORD_MIME || "audio/webm;codecs=opus");
-        p.sourceBuffer = sb;
-
-        sb.addEventListener("updateend", () => flushQueue(peerId));
+        if (p.mediaSource !== ms) return; // уже заменили
+        try {
+            const sb = ms.addSourceBuffer(RECORD_MIME || "audio/webm;codecs=opus");
+            sb.mode = "sequence";
+            p.sourceBuffer = sb;
+            sb.addEventListener("updateend", () => flushQueue(peerId));
+            flushQueue(peerId);
+        } catch (e) {
+            console.warn("addSourceBuffer failed:", e);
+        }
     });
 }
 
 function flushQueue(peerId) {
     const p = peers.get(peerId);
-    if (!p?.sourceBuffer || p.sourceBuffer.updating || !p.queue?.length) return;
+    if (!p?.sourceBuffer || !p?.mediaSource) return;
+    if (p.mediaSource.readyState !== "open") return;
+    if (p.sourceBuffer.updating) return;
+    if (!p.queue?.length) return;
 
-    p.sourceBuffer.appendBuffer(p.queue.shift());
+    try {
+        p.sourceBuffer.appendBuffer(p.queue.shift());
+    } catch (e) {
+        console.warn("appendBuffer failed:", e);
+        p.queue = [];
+    }
 }
 
 function destroyPeerAudio(peerId) {
     const p = peers.get(peerId);
     if (!p) return;
 
+    p.playing = false;
+    p.queue = [];
+
     if (p.audio) {
+        p.audio.pause();
         p.audio.src = "";
         p.audio.remove();
+        p.audio = null;
     }
 
+    if (p.mediaSource) {
+        try {
+            if (p.mediaSource.readyState === "open") p.mediaSource.endOfStream();
+        } catch {}
+        p.mediaSource = null;
+    }
+
+    p.sourceBuffer = null;
+
+    if (p.el) p.el.remove();
     peers.delete(peerId);
 }
 
@@ -320,11 +344,24 @@ function handleSignaling(msg) {
     }
 }
 
+function resetPeerAudio(peerId) {
+    const p = peers.get(peerId);
+    if (!p) return;
+
+    p.playing = true;
+    p.nextPlayTime = 0; // сбрасываем таймлайн
+}
+
 function toggleMute() {
+    if (!localStream) return;
+
     isMuted = !isMuted;
 
     micIcon.textContent = isMuted ? "🔇" : "🎙";
     micLabel.textContent = isMuted ? "выключен" : "микрофон";
+
+    // Ничего не трогаем у пиров — MediaSource остаётся живым
+    // Просто перестаём/начинаем слать свои чанки (это уже делает ondataavailable)
 
     ws?.send(JSON.stringify({ type: "mute", muted: isMuted }));
 }

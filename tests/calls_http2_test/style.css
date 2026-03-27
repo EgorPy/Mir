@@ -2,8 +2,8 @@
     --bg:           #0a0a0f;
     --surface:      #12121a;
     --border:       #1e1e2e;
-    --accent:       #2f00ff;
-    --accent-dim:   #00000000;
+    --accent:       #6100d4;
+    --accent-dim:   #0f176c50;
     --accent-glow:  rgba(64,0,255,0.15);
     --danger:       #ff2e2e;
     --danger-dim:   rgba(255,59,92,0.12);
@@ -11,6 +11,7 @@
     --text:         #e8e8f0;
     --text-dim:     #6b6b8a;
     --green:        #00ff94;
+    --purple:       #9703ff;
     --mono:         'IBM Plex Mono', monospace;
     --display:      'Unbounded', sans-serif;
 }
@@ -55,6 +56,7 @@ body::after {
 #join-screen {
     background: var(--surface);
     border: 1px solid var(--border);
+    border-radius: 1rem;
     padding: 40px;
     position: relative;
     animation: fadeIn 0.4s ease;
@@ -111,6 +113,7 @@ input[type="text"] {
     width: 100%;
     background: var(--bg);
     border: 1px solid var(--border);
+    border-radius: 1rem;
     color: var(--text);
     font-family: var(--mono);
     font-size: 14px;
@@ -130,6 +133,7 @@ input[type="text"]::placeholder { color: var(--muted); }
     width: 100%;
     background: transparent;
     border: 1px solid var(--accent);
+    border-radius: 1rem;
     color: var(--accent);
     font-family: var(--display);
     font-size: 11px;
@@ -147,7 +151,10 @@ input[type="text"]::placeholder { color: var(--muted); }
 
 /* ── Call screen ─────────────────────────────────────────────────── */
 
-#call-screen { display: none; animation: fadeIn 0.3s ease; }
+#call-screen {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
 
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(8px); }
@@ -157,6 +164,7 @@ input[type="text"]::placeholder { color: var(--muted); }
 .call-header {
     background: var(--surface);
     border: 1px solid var(--border);
+    border-radius: 1rem 1rem 0 0;
     border-bottom: none;
     padding: 16px 20px;
     display: flex;
@@ -170,7 +178,7 @@ input[type="text"]::placeholder { color: var(--muted); }
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 2px;
-    background: linear-gradient(90deg, transparent, var(--green), transparent);
+    background: linear-gradient(90deg, transparent, var(--purple), transparent);
 }
 
 .room-info { font-size: 11px; color: var(--text-dim); }
@@ -198,6 +206,7 @@ input[type="text"]::placeholder { color: var(--muted); }
 .peer-tile {
     background: var(--bg);
     border: 1px solid var(--border);
+    border-radius: 1rem;
     padding: 10px 6px;
     text-align: center;
     font-size: 10px;
@@ -267,6 +276,7 @@ input[type="text"]::placeholder { color: var(--muted); }
 .controls {
     background: var(--surface);
     border: 1px solid var(--border);
+    border-radius: 0 0 1rem 1rem;
     padding: 16px;
     display: flex;
     gap: 10px;
@@ -276,6 +286,7 @@ input[type="text"]::placeholder { color: var(--muted); }
     flex: 1;
     background: var(--bg);
     border: 1px solid var(--border);
+    border-radius: 1rem;
     color: var(--text-dim);
     font-family: var(--mono);
     font-size: 11px;
