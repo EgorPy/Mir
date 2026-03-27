@@ -330,11 +330,15 @@ function toggleMute() {
 }
 
 function leaveCall() {
-    if (mediaRecorder?.state !== "inactive") {
-        mediaRecorder.stop();
+    if (mediaRecorder) {
+        if (mediaRecorder.state !== "inactive") mediaRecorder.stop();
+        mediaRecorder = null;
     }
 
-    localStream?.getTracks().forEach(t => t.stop());
+    if (localStream) {
+        localStream.getTracks().forEach(t => t.stop());
+        localStream = null;
+    }
 
     if (audioCtx) {
         audioCtx.close();
@@ -347,8 +351,10 @@ function leaveCall() {
 
     peers.clear();
 
-    ws?.close(1000, "user left");
-    ws = null;
+    if (ws) {
+        ws.close(1000, "user left");
+        ws = null;
+    }
 
     btnJoin.disabled = false;
     btnMute.style.display = "none";
@@ -358,7 +364,6 @@ function leaveCall() {
     document.getElementById("join-screen").style.display = "block";
 
     peersGrid.innerHTML = '<div class="empty-state">Вы не в комнате</div>';
-
     document.getElementById("hdr-count").textContent = "0 участников";
 
     fillRandomInputs();
