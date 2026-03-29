@@ -147,7 +147,7 @@ class AutoDB:
 
             if existing_columns:
                 alter_sql = f"ALTER TABLE {table} ADD COLUMN {column_sql}"
-                logger.info("Adding missing column '%s' to table '%s': %s", name, table, alter_sql)
+                logger.warning("Adding missing column '%s' to table '%s': %s", name, table, alter_sql)
                 cursor.execute(alter_sql)
             else:
                 columns_sql_list.append(column_sql)
@@ -155,7 +155,7 @@ class AutoDB:
         if not existing_columns:
             columns_sql = ", ".join(columns_sql_list)
             create_sql = f"CREATE TABLE IF NOT EXISTS {table} ({columns_sql})"
-            logger.debug("Executing SQL to create table '%s': %s", table, create_sql)
+            logger.warning(f"Table {table} does not exist! Creating... {create_sql}")
             cursor.execute(create_sql)
 
         for column in indexes:

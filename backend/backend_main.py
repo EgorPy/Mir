@@ -56,27 +56,27 @@ app.include_router(messages_router, tags=["Messages"])
 app.include_router(websockets_router, tags=["Websockets"])
 
 
-def get_schema_files():
-    schemas_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../backend/services"))
-    logger.info(f"Looking for schema files in: {schemas_path}")
-    return pkgutil.iter_modules([schemas_path])
-
-
-def ensure_schema(skip: bool = False):
-    if skip and not SERVER_MODE:
-        return
-    schema_files = get_schema_files()
-    db = AutoDB(cm)
-
-    for schema_file in schema_files:
-        module = importlib.import_module(f"backend.services.{schema_file.name}.schema")
-        logger.info(f"Loaded service: {schema_file.name}")
-        models = inspect.getmembers(module, inspect.isclass)
-        for raw_model in models:
-            model = raw_model[1]
-            if issubclass(model, Schema) and model != Schema:
-                db.create_table_from_model(model)
-        print()
+# def get_schema_files():
+#     schemas_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../backend/services"))
+#     logger.info(f"Looking for schema files in: {schemas_path}")
+#     return pkgutil.iter_modules([schemas_path])
+#
+#
+# def ensure_schema(skip: bool = False):
+#     if skip and not SERVER_MODE:
+#         return
+#     schema_files = get_schema_files()
+#     db = AutoDB(cm)
+#
+#     for schema_file in schema_files:
+#         module = importlib.import_module(f"backend.services.{schema_file.name}.schema")
+#         logger.info(f"Loaded service: {schema_file.name}")
+#         models = inspect.getmembers(module, inspect.isclass)
+#         for raw_model in models:
+#             model = raw_model[1]
+#             if issubclass(model, Schema) and model != Schema:
+#                 db.create_table_from_model(model)
+#         print()
 
 
 def start_server():
@@ -98,7 +98,7 @@ def run():
     logger = logging.getLogger("core")
     logger.setLevel(logging.DEBUG)
 
-    ensure_schema()
+    # ensure_schema()
     start_server()
 
     # server_thread = threading.Thread(target=start_server, daemon=True)
