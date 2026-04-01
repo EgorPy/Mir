@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ролл!</title>
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <script src="/static/js/config.js" type="module"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;700&family=Inter:wght@300;400;500&display=swap"
+          rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/roll.css">
+    <link rel="stylesheet" href="/static/css/app_header.css">
+</head>
+<body>
+
+<!-- TOP BAR -->
+<header class="app-header">
+    <a class="app-name" href="/">Мир</a>
+    <nav class="roll-topbar__nav">
+        <button class="btn-ghost" id="myRollStatsBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            Мои роллы
+        </button>
+        <button class="btn-primary" id="createRollBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Создать ролл
+        </button>
+    </nav>
+</header>
+
+<!-- FULLSCREEN ROLL VIEWER -->
+<main class="roll-stage" id="rollStage">
+
+    <div class="roll-media-wrap" id="rollMediaWrap">
+        <div class="roll-loader" id="rollLoader">
+            <div class="roll-loader__ring"></div>
+        </div>
+        <img class="roll-media roll-media--img" id="rollImage" alt="ролл" style="display:none;">
+        <video class="roll-media roll-media--vid" id="rollVideo" playsinline autoplay loop style="display:none;"></video>
+        <div class="roll-empty" id="rollEmpty" style="display:none;">
+            <p>Роллов пока нет.<br>Стань первым!</p>
+        </div>
+    </div>
+
+    <!-- Bottom gradient -->
+    <div class="roll-overlay"></div>
+
+    <!-- Info bar -->
+    <div class="roll-info" id="rollInfo">
+        <div class="roll-info__author" id="rollAuthor">—</div>
+        <div class="roll-info__views">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <span id="rollViewsCount">0</span>
+        </div>
+    </div>
+
+    <!-- Mute toggle -->
+    <button class="roll-mute" id="rollMuteBtn" title="Звук">
+        <svg id="iconSound" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             style="display:none;">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+        </svg>
+        <svg id="iconMuted" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <line x1="23" y1="9" x2="17" y2="15"/>
+            <line x1="17" y1="9" x2="23" y2="15"/>
+        </svg>
+    </button>
+    <button class="roll-next" id="rollNextBtn" title="Следующий ролл">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+        </svg>
+    </button>
+
+</main>
+
+<!-- MODAL: CREATE ROLL -->
+<div class="r-modal-backdrop" id="createRollModal">
+    <div class="r-modal">
+        <button class="r-modal__close" id="closeCreateModal">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        </button>
+        <h2 class="r-modal__title">Новый ролл</h2>
+        <p class="r-modal__sub">Загрузите фото или видео</p>
+
+        <label class="r-upload-zone" id="uploadZone" for="fileInput">
+            <div class="r-upload-zone__icon">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+            </div>
+            <span class="r-upload-zone__label" id="uploadLabel">Перетащите файл или нажмите</span>
+            <span class="r-upload-zone__hint">JPG, PNG, MP4, WEBM — до 50 МБ</span>
+            <input type="file" id="fileInput" accept="image/*,video/*" hidden>
+        </label>
+
+        <div class="r-preview" id="uploadPreview" style="display:none;">
+            <img id="previewImg" style="display:none;" alt="preview">
+            <video id="previewVid" style="display:none;" muted playsinline autoplay loop></video>
+            <button class="r-preview__remove" id="removeFile">✕</button>
+        </div>
+
+        <div class="r-modal__actions">
+            <button class="btn-ghost" id="cancelCreateBtn">Отмена</button>
+            <button class="btn-primary" id="submitRollBtn" disabled>Опубликовать</button>
+        </div>
+        <div class="r-modal__error" id="createError" style="display:none;"></div>
+    </div>
+</div>
+
+<!-- MODAL: MY ROLLS STATS -->
+<div class="r-modal-backdrop" id="myRollsModal">
+    <div class="r-modal r-modal--stats">
+        <button class="r-modal__close" id="closeStatsModal">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        </button>
+        <h2 class="r-modal__title">Мои роллы</h2>
+        <p class="r-modal__sub">Сколько раз вас зароллили</p>
+        <div class="r-stats-list" id="myRollsList">
+            <div class="r-stats-loading">Загрузка...</div>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/fetch/roll.js" type="module"></script>
+</body>
+</html>
