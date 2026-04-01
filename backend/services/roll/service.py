@@ -10,7 +10,7 @@ import json
 import base64
 
 
-def encode_content(content) -> str | None:
+def encode_content(content):
     """Конвертирует bytes → base64-строку. Если уже строка — возвращает как есть."""
     if content is None:
         return None

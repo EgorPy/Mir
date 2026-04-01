@@ -127,6 +127,7 @@ async function loadRoll() {
     let data;
     try {
         const res = await fetch(`${window.BACKEND_URL}/roll/random`, { credentials: 'include' });
+        if (res.status === 401) { window.location.href = '/login'; return; }
         if (!res.ok) throw new Error('Ошибка сервера');
         data = await res.json();
         if (!data || data.ok === false) { showEmpty(); return; }
