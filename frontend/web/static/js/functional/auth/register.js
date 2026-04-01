@@ -27,7 +27,7 @@ document.querySelector(".login-form").addEventListener("submit", async function(
 
     if (response.ok) {
         const result = await response.json()
-        window.location.href = "/"
+        window.location.href = "/roll"
     } else {
         const error = await response.json()
         console.log(error)
