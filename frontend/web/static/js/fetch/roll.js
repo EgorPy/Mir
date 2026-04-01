@@ -320,28 +320,31 @@ async function loadMyRollsStats() {
     for (const roll of rolls) {
         let rolled = [];
         try { rolled = typeof roll.rolled === 'string' ? JSON.parse(roll.rolled) : (roll.rolled || []); } catch (_) {}
-        const item   = document.createElement('div');
+
+        const item = document.createElement('div');
         item.className = 'r-stats-item';
-        const base64 = roll.content;
-        const mime   = base64 ? guessMime(base64) : null;
-        let thumbHTML;
-        if (base64 && !isVideo(mime)) {
-            const url = URL.createObjectURL(base64ToBlob(base64, mime || 'image/jpeg'));
-            thumbHTML = `<img class="r-stats-item__thumb" src="${url}" alt="ролл">`;
-        } else {
-            thumbHTML = `<div class="r-stats-item__thumb r-stats-item__thumb--video">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polygon points="5 3 19 12 5 21 5 3"/></svg></div>`;
-        }
+
+        // Контент больше не приходит — показываем нейтральный placeholder
+        const thumbHTML = `
+        <div class="r-stats-item__thumb r-stats-item__thumb--placeholder">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+            </svg>
+        </div>`;
+
         item.innerHTML = `${thumbHTML}
-            <div class="r-stats-item__info">
-                <div class="r-stats-item__id">Ролл #${roll.id}</div>
-                <div class="r-stats-item__count">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    ${rolled.length} ${pluralViews(rolled.length)}
-                </div>
-            </div>`;
+        <div class="r-stats-item__info">
+            <div class="r-stats-item__id">Ролл #${roll.id}</div>
+            <div class="r-stats-item__count">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+                ${rolled.length} ${pluralViews(rolled.length)}
+            </div>
+        </div>`;
+
         myRollsList.appendChild(item);
     }
 }

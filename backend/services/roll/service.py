@@ -121,7 +121,6 @@ async def my_rolls(user_id: str = Depends(check_user_session)):
     for row in (rows if isinstance(rows, list) else [rows]):
         result.append({
             "id": row.get("id"),
-            "content": encode_content(row.get("content")),
             "rolled": row.get("rolled", "[]"),
         })
 
