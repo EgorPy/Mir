@@ -1,10 +1,9 @@
-from core.method_generator import AutoDB, ConnectionManager, cm
+from core.method_generator import AutoDB, cm
 
 from backend.services.auth.api.auth import check_user_session
 from backend.services.roll.schema import Rolls
 
 from fastapi.params import Depends
-from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, UploadFile, File
 import json
 import base64
