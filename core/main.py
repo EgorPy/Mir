@@ -90,14 +90,21 @@ def start_windows(script, new_console: bool = True):
     else:
         logger.info(f"Starting {script}...")
 
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    env = os.environ.copy()
+    env["PYTHONPATH"] = root
+
     if new_console:
         subprocess.Popen(
             [PYTHON, "-u", script],
-            creationflags=subprocess.CREATE_NEW_CONSOLE
+            creationflags=subprocess.CREATE_NEW_CONSOLE,
+            env=env
         )
     else:
-        cmd = f"{PYTHON} {script}"
-        os.system(cmd)
+        subprocess.Popen(
+            [PYTHON, "-u", script],
+            env=env
+        )
 
 
 def run_windows(new_console: bool = True):
@@ -122,7 +129,12 @@ def run_windows(new_console: bool = True):
 
 
 def run(regenerate: bool = False):
-    """ Starts all systems """
+    """
+    Starts all systems.
+
+    :param regenerate: check that SQLite database tables and columns are the same as in the schema files
+    and regenerate them if missing
+    """
 
     print(art)
 
