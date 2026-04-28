@@ -79,7 +79,7 @@ By default, configuration is loaded from `core/config.ini`:
 ### 3. Run the full project
 
 ```bash
-python core/main.py
+python -m core.main
 ```
 
 On Windows, this launcher opens separate consoles for:
