@@ -14,7 +14,6 @@ SQL_TYPES = {
     str: "TEXT",
     float: "REAL",
     bool: "INTEGER",
-    bytes: "BLOB"
 }
 
 
@@ -35,6 +34,7 @@ def DBField(
         unique: bool = False,
         index: bool = False,
         default=None,
+        check: str = None,
 ):
     """
     Wrapper around Pydantic Field for describing database columns.
@@ -45,6 +45,7 @@ def DBField(
         unique: Adds UNIQUE constraint
         index: Creates SQL index
         default: Default value
+        check: SQL CHECK constraint
     """
 
     return Field(
@@ -54,12 +55,13 @@ def DBField(
             "autoincrement": autoincrement,
             "unique": unique,
             "index": index,
+            "check": check,
         },
     )
 
 
 class Schema(BaseModel):
-    pass
+    __checks__: list[str] = []
 
 
 class ConnectionManager:
@@ -129,6 +131,9 @@ class AutoDB:
         indexes = []
 
         for name, field in model.model_fields.items():
+            if name == "__checks__":
+                continue
+
             annotation = field.annotation
             sql_type = SQL_TYPES.get(annotation, "TEXT")
             column_sql = f"{name} {sql_type}"
@@ -140,6 +145,8 @@ class AutoDB:
                 column_sql += " AUTOINCREMENT"
             if extra.get("unique"):
                 column_sql += " UNIQUE"
+            if extra.get("check"):
+                column_sql += f" CHECK ({extra['check']})"
             if extra.get("index"):
                 indexes.append(name)
 
@@ -154,7 +161,10 @@ class AutoDB:
                 columns_sql_list.append(column_sql)
 
         if not existing_columns:
-            columns_sql = ", ".join(columns_sql_list)
+            table_checks = getattr(model, "__checks__", [])
+            checks_sql = [f"CHECK ({expr})" for expr in table_checks]
+            all_parts = columns_sql_list + checks_sql
+            columns_sql = ", ".join(all_parts)
             create_sql = f"CREATE TABLE IF NOT EXISTS {table} ({columns_sql})"
             logger.warning(f"Table {table} does not exist! Creating... {create_sql}")
             cursor.execute(create_sql)
@@ -195,9 +205,7 @@ class AutoDB:
 
     def select_one(self, model: Type[BaseModel], **where):
         rows = self.select(model, where)
-        if rows:
-            return rows[0]
-        return None
+        return rows[0] if rows else None
 
     def update(self, model: Type[BaseModel], values: Dict[str, Any], where: Dict[str, Any]):
         table = _table_name(model)

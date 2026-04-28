@@ -31,7 +31,7 @@ def count_lines_in_folder(
         ignore_folders: set[str] = None,
 ):
     if ignore_folders is None:
-        ignore_folders = {"venv", ".venv", ".git", "__pycache__", ".idea", ".vscode"}
+        ignore_folders = {"venv", ".venv", ".git", "__pycache__", ".idea", ".vscode", "build", "node_modules"}
 
     if not os.path.isdir(path):
         if is_extension_allowed(path, extensions):
