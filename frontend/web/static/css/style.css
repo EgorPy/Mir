@@ -11,7 +11,7 @@ body {
     flex-direction: column;
     background: var(--color-bg-base);
     color: var(--color-white);
-    font-family: sans-serif;
+    font-family: serif;
 }
 
 body::before {
@@ -43,7 +43,7 @@ body::before {
 /*}*/
 
 @font-face {
-font-family: 'Native'
+font-family: 'Native';
 src: url("fonts/Merriweather/Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf") format('truetype');
 font-weight: normal;
 font-style: italic;
@@ -52,7 +52,7 @@ font-display: swap;
 
 
 * {
-    font-family: math, sans-serif;
+    font-family: serif;
 }
 
 a {
@@ -69,7 +69,7 @@ a::hover {
 }
 
 .cursive {
-    font-family: "Great Vibes", cursive;
+    font-family: "Great Vibes", serif;
     font-size: 4rem;
 }
 

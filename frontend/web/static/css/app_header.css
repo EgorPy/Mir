@@ -25,7 +25,7 @@
 }
 
 .app-header .app-name {
-    font-family: 'Great Vibes', cursive;
+    font-family: 'Great Vibes', serif;
     font-size: 2.8rem;
     font-weight: 400;
     letter-spacing: 0.04em;
@@ -38,7 +38,7 @@
 }
 
 .app-header .profile-name {
-    font-family: 'Great Vibes', cursive;
+    font-family: 'Great Vibes', serif;
     margin: 0 2rem;
     font-size: 2.2rem;
     font-weight: 400;
@@ -175,10 +175,9 @@
     margin: 0 1rem;
     color: rgba(242, 237, 232, 0.55);
     text-decoration: none;
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: serif;
     font-size: 0.72rem;
     letter-spacing: 0.18em;
-    text-transform: uppercase;
     padding: 0.8rem 1rem;
     display: block;
     border-radius: 6px;
@@ -216,7 +215,6 @@
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(2px);
     opacity: 0;
     visibility: visible;
     pointer-events: none;
@@ -299,7 +297,7 @@
 }
 
 .modal-header h2 {
-    font-family: 'Cormorant Garamond', serif;
+    font-family: serif;
     font-weight: 300;
     font-size: 2rem;
     color: var(--color-white);

@@ -12,7 +12,7 @@
     --text-dim:     #6b6b8a;
     --green:        #00ff94;
     --purple:       #9703ff;
-    --mono:         'IBM Plex Mono', monospace;
+    --mono:         'IBM Plex Mono', sans-serif;
     --display:      'Unbounded', sans-serif;
 }
 
