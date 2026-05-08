@@ -6,13 +6,10 @@ Windows: opens separate console windows, no log files
 
 from core.logger import logger
 from core.ved3v_ascii_art import art
-from core.method_generator import AutoDB, cm, Schema
+from core.method_generator import ensure_schema
 
-import importlib.util
 import subprocess
-import importlib
 import platform
-import inspect
 import time
 import sys
 import os
@@ -24,46 +21,6 @@ core_systems = [
     "backend/backend_main.py",
     "frontend/frontend_main.py",
 ]
-
-IGNORED_DIRS = {
-    "venv",
-    ".venv",
-    "env",
-    "__pycache__",
-    ".git",
-    ".idea",
-    ".vscode"
-}
-
-
-def load_module_from_path(module_name, file_path):
-    spec = importlib.util.spec_from_file_location(module_name, file_path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-def ensure_schema(root_path="."):
-    db = AutoDB(cm)
-    for root, dirs, files in os.walk(root_path):
-        dirs[:] = [d for d in dirs if d not in IGNORED_DIRS]
-        for file in files:
-            if file == "schema.py":
-                file_path = os.path.join(root, file)
-                module_name = (
-                    os.path.relpath(file_path, root_path)
-                    .replace(os.sep, ".")
-                    .replace(".py", "")
-                )
-                try:
-                    module = load_module_from_path(module_name, file_path)
-                except ImportError as e:
-                    logger.error(f"Failed to import {file_path}: {e}")
-                    continue
-                logger.info(f"Loaded schema: {file_path}")
-                for _, model in inspect.getmembers(module, inspect.isclass):
-                    if issubclass(model, Schema) and model != Schema:
-                        db.create_table_from_model(model)
 
 
 def run_linux():

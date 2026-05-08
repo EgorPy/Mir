@@ -4,10 +4,14 @@ from core.logger import logger
 
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
+
 from typing import Any, Dict, Type
 from functools import wraps
+import importlib.util
 import threading
 import sqlite3
+import inspect
+import os
 
 SQL_TYPES = {
     int: "INTEGER",
@@ -15,6 +19,46 @@ SQL_TYPES = {
     float: "REAL",
     bool: "INTEGER",
 }
+
+IGNORED_DIRS = {
+    "venv",
+    ".venv",
+    "env",
+    "__pycache__",
+    ".git",
+    ".idea",
+    ".vscode"
+}
+
+
+def load_module_from_path(module_name, file_path):
+    spec = importlib.util.spec_from_file_location(module_name, file_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def ensure_schema(root_path="."):
+    db = AutoDB(cm)
+    for root, dirs, files in os.walk(root_path):
+        dirs[:] = [d for d in dirs if d not in IGNORED_DIRS]
+        for file in files:
+            if file == "schema.py":
+                file_path = os.path.join(root, file)
+                module_name = (
+                    os.path.relpath(file_path, root_path)
+                    .replace(os.sep, ".")
+                    .replace(".py", "")
+                )
+                try:
+                    module = load_module_from_path(module_name, file_path)
+                except ImportError as e:
+                    logger.error(f"Failed to import {file_path}: {e}")
+                    continue
+                logger.info(f"Loaded schema: {file_path}")
+                for _, model in inspect.getmembers(module, inspect.isclass):
+                    if issubclass(model, Schema) and model != Schema:
+                        db.create_table_from_model(model)
 
 
 def async_db_method(func):
