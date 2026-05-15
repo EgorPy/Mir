@@ -5,27 +5,23 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # do not move down
 
-from core.method_generator import AutoDB, Schema, cm
 from core.config import config
 from core.logger import logger
 
-from backend.services.auth.api.auth import app as auth_router
-from backend.services.chats.service import app as chats_router
+from backend.tech.websockets.websockets_connect import app as websockets_router
 from backend.services.chats.permissions import app as permissions_router
 from backend.services.chats.messages import app as messages_router
-from backend.tech.websockets.websockets_connect import app as websockets_router
+from backend.services.chats.service import app as chats_router
+from backend.services.auth.api.auth import app as auth_router
 
 from backend.phone_mode import DEBUG_PHONE_MODE, SERVER_MODE
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-import importlib
 import traceback
 import uvicorn
 import logging
-import inspect
-import pkgutil
 
 app = FastAPI()
 

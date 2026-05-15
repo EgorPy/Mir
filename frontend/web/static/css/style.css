@@ -3,44 +3,40 @@
 html, body {
     margin: 0;
     padding: 0;
-    height: 100%; /* Fallback for older browsers */
+    height: 100%;
 }
 
 body {
     display: flex;
     flex-direction: column;
     background: var(--color-bg-base);
-    color: var(--color-white);
+    color: var(--text-main);
     font-family: serif;
 }
 
 body::before {
     content: '';
     position: fixed;
-    width: 800px;
-    height: 800px;
-    background: radial-gradient(circle, rgba(124,58,237,0.12), transparent 60%);
-    top: -300px;
-    right: -300px;
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(circle, var(--accent-glow), transparent 65%);
+    top: -250px;
+    right: -200px;
     pointer-events: none;
     z-index: 0;
+    border-radius: 50%;
+    filter: blur(40px);
+    animation: blobDrift 28s ease-in-out infinite;
+    will-change: transform;
 }
 
-/*@font-face {*/
-/*font-family: 'Cursive';*/
-/*src: url('fonts/GreatVibes/GreatVibes-Regular.ttf') format('truetype');*/
-/*font-weight: normal;*/
-/*font-style: normal;*/
-/*font-display: swap;*/
-/*}*/
-
-/*@font-face {*/
-/*font-family: 'Native'*/
-/*src: url("fonts/Merriweather/Merriweather-VariableFont_opsz,wdth,wght.ttf") format('truetype');*/
-/*font-weight: normal;*/
-/*font-style: normal;*/
-/*font-display: swap;*/
-/*}*/
+@keyframes blobDrift {
+    0%   { transform: translate(0px,   0px); }
+    25%  { transform: translate(-60px, 80px); }
+    50%  { transform: translate(-120px, 30px); }
+    75%  { transform: translate(-50px, -60px); }
+    100% { transform: translate(0px,   0px); }
+}
 
 @font-face {
 font-family: 'Native';
@@ -50,21 +46,20 @@ font-style: italic;
 font-display: swap;
 }
 
-
 * {
     font-family: serif;
 }
 
 a {
     text-decoration: none;
-    color: var(--color-white);
+    color: var(--text-main);
 }
 
 a::visited {
-    color: var(--color-white);
+    color: var(--text-main);
 }
 
-a::hover {
+a:hover {
     cursor: pointer;
 }
 

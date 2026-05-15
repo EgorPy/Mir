@@ -31,7 +31,7 @@ app = FastAPI(title="Group WebSocket Audio Call")
 rooms: dict[str, dict[str, WebSocket]] = {}
 
 # Максимум участников на комнату (0 = без ограничений)
-MAX_PEERS_PER_ROOM = 0
+MAX_PEERS_PER_ROOM = 10
 
 
 # ---------------------------------------------------------------------------

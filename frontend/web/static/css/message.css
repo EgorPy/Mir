@@ -1,17 +1,58 @@
 ﻿@import url("/static/css/theme.css");
 
 .message {
-    padding: 0.5rem 0.8rem 0.5rem 0.8rem;
+    padding: 0.6rem 0.9rem;
     border-radius: 10px;
     background: var(--color-bg-elev-3);
-    margin: 1rem;
+    border: 1px solid var(--border-soft);
+    margin: 0.8rem;
     max-width: 40vw;
     width: fit-content;
-    min-width: 10vw;
+    min-width: 8vw;
     overflow-wrap: break-word;
     word-break: break-word;
     user-select: none;
-    transition: background 0.2s;
+    transition: all 0.2s;
+    animation: msgIn 0.25s ease;
+}
+
+.message:hover {
+    border-color: var(--color-bg-elev-13);
+}
+
+.message.self {
+    background: var(--color-bg-elev-6);
+}
+
+.message.selected {
+    background: var(--color-bg-elev-11);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+}
+
+.message-text {
+    padding: 0.4rem 0;
+    padding-bottom: 0.1rem;
+    font-size: 1.2rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.message-author {
+    font-size: 0.9rem;
+    letter-spacing: 0.08em;
+    color: var(--color-white);
+}
+
+.message-date {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+}
+
+.message-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .message .message-reactions {
@@ -23,19 +64,6 @@
     width: min-content;
     min-width: 17vw;
     text-align: center;
-}
-
-pre {
-    margin: 0;
-}
-
-.msg-ascii-art {
-    font-size: 0.35rem;
-}
-
-.msg-code {
-    font-size: 1rem;
-    font-family: monospace;
 }
 
 .message .message-reactions:has(div) {
@@ -55,120 +83,19 @@ pre {
     background: var(--color-bg-elev-15);
 }
 
-.message .message-text {
-    white-space: pre-wrap;
-}
+.message .message-forwarded { display: none; }
+.message .message-favorite-indicator { display: none; }
 
-.message.selected {
-    background: var(--color-bg-elev-11);
-    outline: 2px solid var(--color-bg-elev-15);
-}
-
-.message-text {
-    padding: 0.5rem 0;
-    padding-bottom: 0.1rem;
-    font-size: 1.5rem;
-}
-
-.message .message-forwarded {
-    display: none;
-}
-
-.message .message-favorite-indicator {
-    display: none;
-}
-
-.message .message-author {
-    font-size: 1rem;
-    font-weight: bold;
-}
-
-.message .message-date {
-    font-size: 1rem;
-}
-
-.message .message-bottom {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.message .message-read {
-    height: 1.3rem;
-}
-
-.message .message-read .read {
-    display: none;
-}
-
-.message .message-read .unread {
-    display: none;
-}
-
-@media (max-width: 768px) {
-    .message {
-        max-width: 70vw;
-    }
-
-    .message .message-reactions {
-        min-width: 70vw;
-    }
-}
-
-.message {
-    padding: 0.6rem 0.9rem;
-    border-radius: 10px;
-    border: 1px solid var(--border-soft);
-    margin: 0.8rem;
-    max-width: 40vw;
-    width: fit-content;
-    min-width: 8vw;
-    overflow-wrap: break-word;
-    word-break: break-word;
-    transition: all 0.2s;
-    animation: msgIn 0.25s ease;
-}
-
-.message:hover {
-    border-color: rgba(124,58,237,0.4);
-    box-shadow: 0 0 20px rgba(124,58,237,0.08);
-}
-
-.message.self {
-    background: rgba(124,58,237,0.12);
-}
-
-.message-text {
-    padding: 0.4rem 0;
-    font-size: 1.2rem;
-    line-height: 1.6;
-    white-space: pre-wrap;
-}
-
-.message-author {
-    font-size: 0.7rem;
-    letter-spacing: 0.08em;
-    color: var(--text-dim);
-}
-
-.message-date {
-    font-size: 0.65rem;
-    color: var(--text-dim);
-}
-
-.message-bottom {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.message.selected {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 1px var(--accent);
-}
+.message .message-read { height: 1.3rem; }
+.message .message-read .read { display: none; }
+.message .message-read .unread { display: none; }
 
 pre {
     margin: 0;
+}
+
+.msg-ascii-art {
+    font-size: 0.35rem;
 }
 
 .msg-code {
@@ -190,5 +117,9 @@ pre {
 @media (max-width: 768px) {
     .message {
         max-width: 70vw;
+    }
+
+    .message .message-reactions {
+        min-width: 70vw;
     }
 }

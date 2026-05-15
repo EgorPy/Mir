@@ -33,7 +33,7 @@ async def update_permissions(chat_id: int, data: dict, current_user=Depends(chec
     if not permissions:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
 
-    if permissions.get("promote_members") != 1:
+    if permissions.get("promote_members") != "1":
         raise HTTPException(403, "You are not allowed to update permissions")
 
     target_member = await db.select_one_async(ChatMembers, chat_id=chat_id, user_id=target_user_id)

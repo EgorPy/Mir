@@ -58,6 +58,13 @@ body::after {
     padding: 14px;
     color: white;
     cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none; /* Safari/Chrome */
+    -moz-appearance: none;    /* Firefox */
+    background-image: url("arrow.svg");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 1rem;
 }
 
 /* ── Join screen ─────────────────────────────────────────────────── */
