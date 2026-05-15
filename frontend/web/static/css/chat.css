@@ -142,10 +142,9 @@
 .resizer::after {
     content: '';
     position: absolute;
-    top: 20%;
-    bottom: 20%;
     left: 50%;
     width: 5px;
+    height: 100%;
     background: var(--accent-glow);
     transform: translateX(-50%);
 }
