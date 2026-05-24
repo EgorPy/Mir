@@ -18,6 +18,7 @@ SQL_TYPES = {
     str: "TEXT",
     float: "REAL",
     bool: "INTEGER",
+    bytes: "BLOB"
 }
 
 IGNORED_DIRS = {

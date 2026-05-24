@@ -59,12 +59,13 @@
 }
 
 .app-header .menu-name input {
-    background: var(--color-bg-elev-2);
-    border: 1px solid var(--color-bg-elev-4);
+    background: var(--color-bg-elev-1);
+    border: 1px solid var(--color-search-outline);
     width: 100%;
     border-radius: 6px;
     padding: 0.65rem 1rem;
     margin: 0.5rem 1rem;
+    font-family: math;
     font-size: 0.75rem;
     letter-spacing: 0.06em;
     color: var(--text-main);
@@ -79,8 +80,8 @@
 
 .app-header .menu-name input:focus {
     outline: none;
-    border-color: var(--color-bg-elev-13);
-    background: var(--color-bg-elev-3);
+    border-color: var(--color-search-outline-focus);
+    background: var(--color-search-bg-focus);
 }
 
 .burger {
@@ -313,10 +314,10 @@
     width: 80%;
     margin: 0 auto;
     padding: 0.75rem 1.2rem;
-    border: 1px solid var(--color-bg-elev-4);
+    border: 1px solid var(--color-search-outline);
     background: var(--color-bg-elev-1);
     border-radius: 8px;
-    font-family: 'Cormorant Garamond', serif;
+    font-family: math, serif;
     font-size: 0.85rem;
     color: var(--text-main);
     transition: border-color 0.22s, background 0.22s;
@@ -331,8 +332,8 @@
 
 .form-group input:focus {
     outline: none;
-    border-color: var(--color-bg-elev-13);
-    background: var(--color-bg-elev-3);
+    border-color: var(--color-search-outline-focus);
+    background: var(--color-search-bg-focus);
 }
 
 .modal-footer {
@@ -350,7 +351,7 @@
     font-size: 0.72rem;
     letter-spacing: 0.14em;
     background: var(--accent);
-    color: var(--color-bg-base);
+    color: var(--color-white);
     text-transform: uppercase;
     cursor: pointer;
     transition: background 0.22s, color 0.22s, transform 0.15s;
@@ -374,7 +375,7 @@
 
 .create-btn {
     background: var(--accent);
-    color: var(--color-bg-base);
+    color: var(--color-white);
 }
 
 .create-btn:hover {
@@ -412,6 +413,16 @@
     justify-content: center;
 }
 
+.modal .chat-info-header img {
+    width: 60px;
+    height: 60px;
+}
+
+.modal .chat-info-members img {
+    width: 60px;
+    height: 60px;
+}
+
 .modal .chat-info-header .title {
     padding: 0.5rem 1rem;
 }
@@ -435,9 +446,9 @@
     border: 1px solid var(--color-bg-elev-11);
     padding: 0.3rem 0.8rem;
     font-family: 'Cormorant Garamond', serif;
-    font-size: 0.65rem;
+    font-size: 1rem;
+    font-weight: bold;
     letter-spacing: 0.1em;
-    text-transform: uppercase;
     color: var(--text-dim);
 }
 
@@ -450,6 +461,7 @@
 .modal .chat-info-members .members-list {
     overflow-y: scroll;
     max-height: 30vh;
+    padding: 0 2rem;
 }
 
 .modal .chat-info-members .members-list::-webkit-scrollbar { width: 4px; }

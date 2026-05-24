@@ -28,7 +28,9 @@
 <aside class="sidebar" id="sidebar">
     <nav class="sidebar-nav">
         <ul>
-            <li><button onclick="window.location.href='/profile'">Профиль</button></li>
+            <li>
+                <button onclick="window.location.href='/profile'">Профиль</button>
+            </li>
             <li>
                 <button id="createGroupBtn" class="create-group-btn">Создать группу</button>
             </li>
@@ -115,7 +117,7 @@
                 </svg>
             </button>
             <img src="../static/favicon.ico" alt="avatar" class="chat-avatar">
-            <div class="chat-title">Название чата</div>
+            <div class="chat-buttons-group">Чат</div>
         </div>
         <div class="chat-header" id="messageOptions">
             <!--            <button id="forwardMessages">Переслать</button>-->
@@ -147,5 +149,6 @@
 <script src="/static/js/functional/chat_info.js" type="module"></script>
 <script src="/static/js/functional/auth/check_auth.js" type="module"></script>
 <script src="/static/js/functional/websocket_reconnect.js" type="module"></script>
+<script src="/static/js/functional/i18n.js" type="module"></script>
 </body>
 </html>

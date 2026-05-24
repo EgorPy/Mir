@@ -195,4 +195,4 @@ async def _handle_signaling(room, sender_id, data, websocket):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("server:app", host="0.0.0.0", port=8001, reload=True)

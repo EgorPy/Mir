@@ -135,7 +135,7 @@ function escapeHtml(s) {
 }
 
 async function joinCall() {
-    const serverUrl = "ws://localhost:8000/ws";
+    const serverUrl = "ws://localhost:8001/ws";
     const callId = document.getElementById("room-input").value.trim();
     myPeerId = document.getElementById("peer-input").value.trim();
 

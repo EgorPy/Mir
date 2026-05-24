@@ -1,8 +1,59 @@
-import { BACKEND_URL } from '../config.js';
-import { openModal, closeModal } from '../visual/modal.js';
+import { openModal, closeModal } from '../visual/modal.js'
 import { getChatState } from '../state/chat_state.js'
 import { getUserStates } from '../state/user_state.js'
 import { leaveChat } from '../fetch/leave_chat.js'
+import { i18n } from './i18n.js'
+import { adjustChatHeader } from '../visual/chat_title.js'
+
+const t = i18n.t
+
+const chatHeaderButtons = [
+    {
+        id: 'titleBtn',
+        class: 'chat-title header-button',
+        label: (chat) => chat.title,
+        show: () => true,
+        onClick: (chat) => showChatInfo(chat.id)
+    },
+    {
+        id: 'callBtn',
+        class: 'chat-call header-button',
+        label: () => t('chat_header.call'),
+        show: (chat) => ['private', 'group'].includes(chat.type),
+        onClick: (chat) => console.log('call', chat.id)
+    },
+];
+
+export function renderChatHeader(chat) {
+    console.log(chat.type)
+    const chatHeader = document.querySelector('#chatHeader');
+    if (!chatHeader) return;
+
+    chatHeader.dataset.chatId = chat.id;
+
+    const avatarElement = chatHeader.querySelector('.chat-avatar');
+    if (avatarElement) {
+        avatarElement.src = chat.avatar || defaultAvatar();
+        avatarElement.onerror = null;
+    }
+
+    const buttonsGroup = chatHeader.querySelector('.chat-buttons-group');
+    if (!buttonsGroup) return;
+    buttonsGroup.innerHTML = '';
+
+    chatHeaderButtons
+        .filter(btn => btn.show(chat))
+        .forEach(btn => {
+        const el = document.createElement('div');
+        el.id = btn.id;
+        el.className = btn.class;
+        el.textContent = btn.label(chat);
+        el.addEventListener('click', () => btn.onClick(chat));
+        buttonsGroup.appendChild(el);
+    });
+
+    adjustChatHeader();
+}
 
 document.addEventListener('click', async (e) => {
     if (e.target.closest('.chat-avatar') || e.target.closest('.chat-title')) {
@@ -19,26 +70,19 @@ document.addEventListener('click', async (e) => {
 });
 
 async function showChatInfo(chatId) {
-    const chat = getChatState(chatId)
-    const user = getUserStates()
+    const chat = getChatState(chatId);
+    const user = getUserStates();
     const modalContent = createChatInfoHTML(chat, user);
     openModal(modalContent);
     setTimeout(setupModalEventListeners, 0);
-    const modalContentElement = modal.querySelector('.modal-content');
-    const leaveChatBtn = modalContentElement.querySelector("#leaveChatBtn")
-    if (!leaveChatBtn) return
-    leaveChatBtn.addEventListener("click", () => {
-        leaveChat(chatId)
-    })
+
+    const modal = document.querySelector('#modal');
+    const leaveChatBtn = modal.querySelector('#leaveChatBtn');
+    if (!leaveChatBtn) return;
+    leaveChatBtn.addEventListener('click', () => leaveChat(chatId));
 }
 
 function setupModalEventListeners() {
-    const closeInfoBtn = document.getElementById('closeInfoBtn');
-    if (closeInfoBtn) {
-        closeInfoBtn.removeEventListener('click', closeModal);
-        closeInfoBtn.addEventListener('click', closeModal);
-    }
-
     const cancelBtn = document.getElementById('cancelModalBtn');
     if (cancelBtn) {
         cancelBtn.removeEventListener('click', closeModal);
@@ -47,93 +91,65 @@ function setupModalEventListeners() {
 }
 
 function createChatInfoHTML(chat, user) {
-    const createdAt = chat.created_at ? new Date(chat.created_at).toLocaleString() : 'Неизвестно';
-
-    let chatTypeText = 'Чат';
-    if (chat.type === 'group') {
-        chatTypeText = 'Группа';
-    } else if (chat.type === 'channel') {
-        chatTypeText = 'Канал';
-    } else if (chat.type === 'private') {
-        chatTypeText = 'Личный чат';
-    }
-
-    const defaultAvatar = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'40\' height=\'40\' viewBox=\'0 0 40 40\'%3E%3Ccircle cx=\'20\' cy=\'20\' r=\'20\' fill=\'%23E0E0E0\'/%3E%3Ctext x=\'20\' y=\'25\' font-size=\'16\' text-anchor=\'middle\' fill=\'%23999\' font-family=\'Arial\'%3E%3F%3C/text%3E%3C/svg%3E';
-    const role = user.chats_role.find(user_chat => user_chat.chat_id == chat.id)?.role
+    const role = user.chats_role.find(user_chat => user_chat.chat_id == chat.id)?.role;
 
     return `
         <div class="modal-header">
-            Информация о чате
+            ${t('chat_info.title')}
         </div>
         <div class="modal-body">
-                <div class="chat-info-header">
-                    <img src="${chat.avatar || defaultAvatar}"
-                         alt="avatar"
-                         class="chat-info-avatar">
-                    <div class="title">${chat.title || 'Без названия'}</div>
-                </div>
+            <div class="chat-info-header">
+                <img src="${chat.avatar || defaultAvatar()}"
+                     alt="avatar"
+                     class="chat-info-avatar">
+                <div class="title">${chat.title || t('chat_info.no_title')}</div>
+            </div>
 
-                <div class="chat-info-buttons">
-                    ${(role && (role != "owner")) ? `<button class="modal-btn" id="leaveChatBtn">Покинуть</button>` : ''}
-                    ${(false && role && (role == "owner")) ? `<button class="modal-btn" id="deleteChatBtn">Удалить</button>` : ''}
-                    ${(role && (role == "owner")) ? `<button class="modal-btn" id="settingsChatBtn">Настройки</button>` : ''}
-                </div>
+            <div class="chat-info-buttons">
+                ${role && role !== 'owner' ? `<button class="modal-btn" id="leaveChatBtn">${t('chat_info.leave')}</button>` : ''}
+                ${role === 'owner' ? `<button class="modal-btn" id="settingsChatBtn">${t('chat_info.settings')}</button>` : ''}
+            </div>
 
-                <div class="chat-info-details">
-                    ${chat.description ? `
-                    <div class="info-row description">
-                        <span class="info-label">Описание:</span>
-                        <p class="info-value">${chat.description}</p>
-                    </div>
-                    ` : ''}
-
-                    ${chat.members ? `
-                    <div class="info-row">
-                        <span class="info-label">Участники:</span>
-                        <span class="info-value">${chat.members.length}</span>
-                    </div>
-                    ` : ''}
-                </div>
-
-                ${chat.members ? `
-                <div class="chat-info-members">
-                    <div class="members-list">
-                        ${chat.members.map(member => `
-                            <div class="member-item">
-                                <div class="user">
-                                    <img src="${member.avatar || defaultAvatar}"
-                                         alt="avatar"
-                                         class="member-avatar">
-                                    <div class="member-name">${member.first_name} ${member.last_name}</div>
-                                </div>
-                                ${(member.role && (member.role != "member")) ? `<span class="member-role">${member.role}</span>` : ''}
-                            </div>
-                        `).join('')}
-                    </div>
+            <div class="chat-info-details">
+                ${chat.description ? `
+                <div class="info-row description">
+                    <span class="info-label">${t('chat_info.description')}:</span>
+                    <p class="info-value">${chat.description}</p>
                 </div>
                 ` : ''}
+
+                ${chat.members ? `
+                <div class="info-row">
+                    <span class="info-label">${t('chat_info.members')}:</span>
+                    <span class="info-value">${chat.members.length}</span>
+                </div>
+                ` : ''}
+            </div>
+
+            ${chat.members ? `
+            <div class="chat-info-members">
+                <div class="members-list">
+                    ${chat.members.map(member => `
+                        <div class="member-item">
+                            <div class="user">
+                                <img src="${member.avatar || defaultAvatar()}"
+                                     alt="avatar"
+                                     class="member-avatar">
+                                <div class="member-name">${member.first_name} ${member.last_name}</div>
+                            </div>
+                            ${member.role && member.role !== 'member' ? `<span class="member-role">${t(`roles.${member.role}`)}</span>` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            ` : ''}
         </div>
         <div class="modal-footer">
-            <button class="modal-btn cancel-btn" id="cancelModalBtn">Ок</button>
+            <button class="modal-btn cancel-btn" id="cancelModalBtn">${t('chat_info.ok')}</button>
         </div>
     `;
 }
 
-export function setChatHeaderInfo(chatId, title, avatar) {
-    const chatHeader = document.querySelector('#chatHeader');
-    if (chatHeader) {
-        chatHeader.dataset.chatId = chatId;
-
-        const titleElement = chatHeader.querySelector('.chat-title');
-        if (titleElement) {
-            titleElement.textContent = title || 'Чат';
-        }
-
-        const avatarElement = chatHeader.querySelector('.chat-avatar');
-        if (avatarElement) {
-            const defaultAvatar = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'40\' height=\'40\' viewBox=\'0 0 40 40\'%3E%3Ccircle cx=\'20\' cy=\'20\' r=\'20\' fill=\'%23E0E0E0\'/%3E%3Ctext x=\'20\' y=\'25\' font-size=\'16\' text-anchor=\'middle\' fill=\'%23999\' font-family=\'Arial\'%3E%3F%3C/text%3E%3C/svg%3E';
-            avatarElement.src = avatar || defaultAvatar;
-            avatarElement.onerror = null;
-        }
-    }
+function defaultAvatar() {
+    return '/static/favicon.ico';
 }

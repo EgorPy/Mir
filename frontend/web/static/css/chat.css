@@ -17,7 +17,7 @@
 
 .actual-chat {
     flex: 1;
-/*    background: var(--color-bg-elev-1);*/
+    /*    background: var(--color-bg-elev-1);*/
 }
 
 .chats {
@@ -348,6 +348,17 @@
     width: 100%;
 }
 
+.chat-header .chat-buttons-group {
+    display: flex;
+    width: 100%;
+    justify-content: space-around;
+    cursor: pointer;
+}
+
+.chat-header .chat-buttons-group .header-button {
+    padding: 0 1rem;
+}
+
 #messageOptions button {
     font-size: 1rem;
     background: var(--color-bg-elev-16);
@@ -394,7 +405,7 @@
         width: 100%;
         height: 100%;
         z-index: 998;
-/*        background: var(--color-bg-elev-1);*/
+        /*        background: var(--color-bg-elev-1);*/
         transition: left 0.25s ease;
     }
 

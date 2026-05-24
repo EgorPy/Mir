@@ -1,8 +1,8 @@
 from core.method_generator import AutoDB, ConnectionManager, cm
 
 from backend.services.auth.api.auth import check_user_session
+import backend.services.chats.constants.role as role
 from backend.services.chats.schema import *
-import backend.services.chats.roles as roles
 
 from fastapi.params import Depends
 from pydantic import BaseModel
@@ -38,7 +38,7 @@ class SearchData(BaseModel):
 
 
 async def add_chat_member(chat_id: str, user_id: str, connection_manager: ConnectionManager = Depends(cm.dependency),
-                          role: str = roles.MEMBER):
+                          role: str = role.MEMBER):
     db = AutoDB(connection_manager)
 
     await db.insert_async(
@@ -118,7 +118,7 @@ async def create_chat(
     if not result:
         return {"ok": False}
 
-    await add_chat_member(result.get("id", None), user_id, connection_manager, role=roles.OWNER)
+    await add_chat_member(result.get("id", None), user_id, connection_manager, role=role.OWNER)
 
     return {"ok": True, "id": result.get("id", None), "result": result}
 
@@ -133,17 +133,18 @@ async def chat_info(
 
     members = await db.execute_async("""SELECT u.id, u.first_name, u.last_name, cm.role FROM users u 
 INNER JOIN chat_members cm ON u.id = cm.user_id WHERE cm.chat_id = ?""", (chat_id,))
-    result = await db.execute_async("SELECT id, title, owner_id FROM chats WHERE id = ?", (chat_id,))
+    result = await db.execute_async("SELECT id, title, owner_id, type FROM chats WHERE id = ?", (chat_id,))
 
     if not result:
         return {"ok": False}
 
     return {
         "ok": True,
-        "id": result[0].get("id", None),
-        "title": result[0].get("title", None),
-        "author": result[0].get("owner_id", None),
-        "members": members
+        "id": result[0].get("id"),
+        "title": result[0].get("title"),
+        "author": result[0].get("owner_id"),
+        "members": members,
+        "type": result[0].get("type")
     }
 
 

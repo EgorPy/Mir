@@ -101,7 +101,8 @@ export function attachChatHandlers() {
             setChatState(chatId, {
                 id: chatObject.id,
                 title: chatObject.title,
-                members: chatObject.members
+                members: chatObject.members,
+                type: chatObject.type
             });
         }
 
