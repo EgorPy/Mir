@@ -4,6 +4,7 @@ import { getUserStates } from '../state/user_state.js'
 import { leaveChat } from '../fetch/leave_chat.js'
 import { i18n } from './i18n.js'
 import { adjustChatHeader } from '../visual/chat_title.js'
+import { initCallPanel, startCall, endCall } from './call_panel.js';
 
 const t = i18n.t
 
@@ -20,7 +21,7 @@ const chatHeaderButtons = [
         class: 'chat-call header-button',
         label: () => t('chat_header.call'),
         show: (chat) => ['private', 'group'].includes(chat.type),
-        onClick: (chat) => console.log('call', chat.id)
+        onClick: (chat) => startCall(chat)
     },
 ];
 
@@ -153,3 +154,5 @@ function createChatInfoHTML(chat, user) {
 function defaultAvatar() {
     return '/static/favicon.ico';
 }
+
+initCallPanel();

@@ -203,10 +203,9 @@
 }
 
 .chat-header {
-    height: 4rem;
+    height: 4.5rem;
     top: 0;
     left: 0;
-    right: 0;
     position: sticky;
     background: var(--color-bg-base);
     color: var(--color-white);
@@ -358,6 +357,20 @@
 .chat-header .chat-buttons-group .header-button {
     padding: 0 1rem;
 }
+
+/*#callSection {*/
+/*    position: fixed;*/
+/*    top: 4rem;*/
+/*    border-radius: 2rem;*/
+/*    background: var(--accent-hover);*/
+/*    margin: 1rem;*/
+/*    justify-content: space-between;*/
+/*    cursor: pointer;*/
+/*}*/
+
+/*#callSection div {*/
+/*    font-size: 1.5rem;*/
+/*}*/
 
 #messageOptions button {
     font-size: 1rem;

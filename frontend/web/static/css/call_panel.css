@@ -1,0 +1,230 @@
+#callSection {
+    position: fixed;
+    top: 4.5rem;
+    height: auto;
+    max-height: 3.5rem;
+    z-index: 999;
+    border-radius: 0 0 1.5rem 1.5rem;
+    background: linear-gradient(180deg, var(--color-bg-base), var(--accent));
+    overflow: hidden;
+    display: none;
+    flex-direction: column;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#callSection.visible {
+    display: flex !important;
+}
+
+#callSection.expanded {
+    max-height: 480px;
+}
+
+/* ── Collapsed bar ── */
+.call-collapsed-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 1.25rem;
+    height: 3.5rem;
+    flex-shrink: 0;
+    cursor: pointer;
+    user-select: none;
+}
+
+.call-collapsed-bar .call-label {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: white;
+}
+
+.call-collapsed-bar .call-timer-small {
+    font-size: 0.95rem;
+    color: rgba(255,255,255,0.75);
+    font-variant-numeric: tabular-nums;
+}
+
+.call-chevron {
+    color: white;
+    transition: transform 0.35s ease;
+    display: flex;
+    align-items: center;
+}
+
+.call-chevron svg {
+    width: 1.2rem;
+    height: 1.2rem;
+}
+
+#callSection.expanded .call-chevron {
+    transform: rotate(180deg);
+}
+
+/* ── Expanded body ── */
+.call-expanded-body {
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity 0.25s ease 0.1s, transform 0.3s ease 0.1s;
+    pointer-events: none;
+    padding: 0 1.25rem 1.25rem;
+}
+
+#callSection.expanded .call-expanded-body {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+/* ── Title row ── */
+.call-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    padding-top: 0.25rem;
+}
+
+.call-chat-name {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: white;
+}
+
+.call-timer {
+    font-size: 1rem;
+    color: rgba(255,255,255,0.8);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.03em;
+}
+
+/* ── Divider ── */
+.call-divider {
+    height: 1px;
+    background: rgba(255,255,255,0.15);
+    margin: 0 0 1rem;
+}
+
+/* ── Participants ── */
+.call-peers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    min-height: 4rem;
+}
+
+.call-peer-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    min-width: 4rem;
+}
+
+.call-peer-avatar {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: white;
+    border: 2px solid rgba(255,255,255,0.3);
+    position: relative;
+    overflow: visible;
+}
+
+.call-peer-avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.call-peer-name {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.85);
+    max-width: 5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.call-peer-muted-badge {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 1.2rem;
+    height: 1.2rem;
+    background: rgba(30,30,40,0.85);
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.call-peer-card.muted .call-peer-muted-badge {
+    display: flex;
+}
+
+.call-peer-card.me .call-peer-avatar {
+    border-color: rgba(255,255,255,0.7);
+}
+
+/* ── Controls ── */
+.call-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.call-btn {
+    border: none;
+    border-radius: 50%;
+    width: 3rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.2s;
+    flex-shrink: 0;
+}
+
+.call-btn:active {
+    transform: scale(0.9);
+}
+
+.call-btn svg {
+    width: 1.3rem;
+    height: 1.3rem;
+    pointer-events: none;
+}
+
+.call-btn-mute {
+    background: rgba(255,255,255,0.2);
+    color: white;
+}
+
+.call-btn-mute:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+.call-btn-mute.muted {
+    background: rgba(255,255,255,0.9);
+    color: #333;
+}
+
+.call-btn-hangup {
+    background: #e53935;
+    color: white;
+    margin-left: auto;
+}
+
+.call-btn-hangup:hover {
+    background: #c62828;
+}

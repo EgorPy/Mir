@@ -230,6 +230,27 @@ async def get_messages(
     return messages
 
 
+@app.get("/users/{user_id}")
+async def get_user(user_id: str,
+                   connection_manager: ConnectionManager = Depends(cm.dependency)):
+    db = AutoDB(connection_manager)
+
+    result = await db.execute_async(
+        "SELECT id, first_name, last_name FROM users WHERE id = ?",
+        (user_id,)
+    )
+
+    if not result:
+        return {"ok": False, "user": None}
+
+    user = result[0]
+    return {"ok": True, "user": {
+        "id": user["id"],
+        "first_name": user.get("first_name"),
+        "last_name": user.get("last_name"),
+    }}
+
+
 async def get_any_member(chat_id: str,
                          user_id: str,
                          connection_manager: ConnectionManager = Depends(cm.dependency)):

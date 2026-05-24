@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="/static/css/chat.css">
     <link rel="stylesheet" href="/static/css/message.css">
     <link rel="stylesheet" href="/static/css/app_header.css">
+    <link rel="stylesheet" href="/static/css/call_panel.css">
     <script>window.WS_NONCE = "{{ ws_nonce }}"</script>
     <script src="/static/js/config.js" type="module"></script>
     <script src="/static/js/visual/mobile_chat_navigation.js" type="module"></script>
@@ -118,6 +119,10 @@
             </button>
             <img src="../static/favicon.ico" alt="avatar" class="chat-avatar">
             <div class="chat-buttons-group">Чат</div>
+        </div>
+        <div class="chat-header" id="callSection">
+            <div>Звонок</div>
+            <img src="../static/arrow.svg">
         </div>
         <div class="chat-header" id="messageOptions">
             <!--            <button id="forwardMessages">Переслать</button>-->
