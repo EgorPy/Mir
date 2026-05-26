@@ -96,7 +96,7 @@ export function attachChatHandlers() {
         if (!chatId) return;
 
         let chatObject = getChatState(chatId);
-        if (chatObject === undefined) {
+        if (!chatObject) {
             chatObject = await fetchChatData(chatId);
             setChatState(chatId, {
                 id: chatObject.id,
