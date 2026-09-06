@@ -28,12 +28,11 @@ app = FastAPI()
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "http://192.168.1.140:3000",
     "http://62.197.49.192:3000",
     "https://localhost:3000",
     "https://127.0.0.1:3000",
     "http://10.38.77.78:3000",
-    "https://192.168.1.140:3000",
+    "https://mir.shtab.digital",
 ]
 
 app.add_middleware(
@@ -78,14 +77,14 @@ app.include_router(websockets_router, tags=["Websockets"])
 def start_server():
     """ Starts the server """
 
-    logger.info(f"BACKEND server started at http://{config.DOMAIN}:{config.BACKEND_PORT}")
+    logger.info(f"BACKEND server started at {config.DOMAIN}:{config.BACKEND_PORT}")
     if SERVER_MODE is True:
-        uvicorn.run("backend_main:app", host=config.DOMAIN, port=int(config.BACKEND_PORT), reload=False)
+        uvicorn.run("backend.backend_main:app", host=config.HOST, port=int(config.BACKEND_PORT), reload=False)
     elif DEBUG_PHONE_MODE is False:
-        uvicorn.run("backend_main:app", host=config.DOMAIN, port=int(config.BACKEND_PORT), reload=True,
+        uvicorn.run("backend.backend_main:app", host=config.HOST, port=int(config.BACKEND_PORT), reload=True,
                     ssl_certfile="192.168.1.140+1.pem", ssl_keyfile="192.168.1.140+1-key.pem")
     else:
-        uvicorn.run("backend_main:app", host=config.DOMAIN, port=int(config.BACKEND_PORT), reload=True)
+        uvicorn.run("backend.backend_main:app", host=config.HOST, port=int(config.BACKEND_PORT), reload=True)
 
 
 def run():

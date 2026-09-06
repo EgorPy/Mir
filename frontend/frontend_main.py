@@ -102,8 +102,8 @@ async def page_404(request, __):
 def start_server():
     """ Starts the server """
 
-    logger.info(f"FRONTEND server started at http://{config.DOMAIN}:{config.FRONTEND_PORT}")
-    uvicorn.run(app, host=config.DOMAIN, port=int(config.FRONTEND_PORT), reload=False)
+    logger.info(f"FRONTEND server started at {config.DOMAIN}:{config.FRONTEND_PORT}")
+    uvicorn.run(app, host=config.HOST, port=int(config.FRONTEND_PORT), reload=False)
 
 
 @app.get("/test-widgets-deep")
@@ -181,7 +181,7 @@ def run():
     server_thread = threading.Thread(target=start_server, daemon=True)
     server_thread.start()
 
-    url = f"http://{config.DOMAIN}:{config.FRONTEND_PORT}"
+    url = f"{config.DOMAIN}:{config.FRONTEND_PORT}"
     # logger.info(f"Opening browser: {url}")
     # webbrowser.open(url)
 
