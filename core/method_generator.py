@@ -420,4 +420,6 @@ class AutoDB:
         return self.execute(sql, params)
 
 
-cm = ConnectionManager()
+DB_PATH = os.environ.get("DB_PATH", "data/database.db")
+
+cm = ConnectionManager(path=DB_PATH)

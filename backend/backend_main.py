@@ -5,6 +5,7 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # do not move down
 
+from core.method_generator import ensure_schema
 from core.config import config
 from core.logger import logger
 
@@ -93,7 +94,7 @@ def run():
     logger = logging.getLogger("core")
     logger.setLevel(logging.DEBUG)
 
-    # ensure_schema()
+    ensure_schema()
     start_server()
 
     # server_thread = threading.Thread(target=start_server, daemon=True)
