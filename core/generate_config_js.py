@@ -8,6 +8,8 @@ import os
 def generate_config_js():
     """ Generate config.js for frontend only if it does not already exist """
 
+    return
+
     target_path = os.path.join(
         os.path.dirname(__file__),
         "..",
@@ -21,7 +23,7 @@ def generate_config_js():
     if os.path.exists(target_path):
         return
 
-    backend_url = f"http://{config.DOMAIN}:{config.BACKEND_PORT}"
+    backend_url = f"http://{config.DOMAIN}:{config.BACKEND_PORT}" # TODO: FIX THIS
 
     js_content = f'const BACKEND_URL = "{backend_url}";\n\nwindow.BACKEND_URL = BACKEND_URL;\n'
 
