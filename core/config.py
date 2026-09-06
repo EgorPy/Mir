@@ -10,23 +10,23 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
-class SectionWrapper:
-    def __init__(self, prefix: str = ""):
-        self._prefix = prefix
-
-    def __getattr__(self, item):
-        key = item.upper()
-        value = os.environ.get(key)
-        if value is None:
-            logger.error(f"Missing configuration key: {key}")
-            sys.exit()
-        return value
+REQUIRED_KEYS = [
+    "DOMAIN",
+    "BACKEND_PORT",
+    "FRONTEND_PORT",
+]
 
 
 class ConfigWrapper:
     def __getattr__(self, item):
-        return SectionWrapper()
+        return os.environ[item.upper()]
 
 
-config = ConfigWrapper()
+try:
+    missing = [k for k in REQUIRED_KEYS if k not in os.environ]
+    if missing:
+        raise KeyError(", ".join(missing))
+    config = ConfigWrapper()
+except KeyError as e:
+    logger.error(f"Missing configuration key: {e}")
+    sys.exit()
