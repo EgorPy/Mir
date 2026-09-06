@@ -139,6 +139,61 @@ def _table_name(model: Type[BaseModel]) -> str:
     return getattr(model, "__tablename__", model.__name__.lower())
 
 
+def _get_column_definition(name: str, field, sql_type: str) -> str:
+    extra = field.json_schema_extra or {}
+    column_sql = f"{name} {sql_type}"
+
+    if extra.get("primary_key"):
+        column_sql += " PRIMARY KEY"
+    if extra.get("autoincrement"):
+        column_sql += " AUTOINCREMENT"
+    if extra.get("unique"):
+        column_sql += " UNIQUE"
+    if extra.get("check"):
+        column_sql += f" CHECK ({extra['check']})"
+
+    default = field.default
+    if default is not None and not extra.get("primary_key"):
+        if isinstance(default, str):
+            column_sql += f" DEFAULT '{default}'"
+        else:
+            column_sql += f" DEFAULT {default}"
+
+    return column_sql
+
+
+def _columns_match(pragma_row: dict, field, sql_type: str) -> bool:
+    extra = field.json_schema_extra or {}
+
+    if pragma_row["type"].upper() != sql_type:
+        logger.debug(
+            "Type mismatch: expected '%s', got '%s'",
+            sql_type, pragma_row["type"].upper()
+        )
+        return False
+
+    expected_default = field.default
+    actual_default = pragma_row["dflt_value"]
+
+    if expected_default is None:
+        if actual_default is not None:
+            logger.debug(
+                "Default mismatch: expected None, got '%s'",
+                actual_default
+            )
+            return False
+    else:
+        expected_str = f"'{expected_default}'" if isinstance(expected_default, str) else str(expected_default)
+        if actual_default != expected_str:
+            logger.debug(
+                "Default mismatch: expected '%s', got '%s'",
+                expected_str, actual_default
+            )
+            return False
+
+    return True
+
+
 class AutoDB:
     """
     Database with auto-generated methods and logging.
@@ -163,17 +218,48 @@ class AutoDB:
     def _get_cursor(self):
         return self._get_connection().cursor()
 
-    def create_table_from_model(self, model: Type[BaseModel]):
-        """ Creates a table from a Pydantic model schema """
+    def _recreate_table(self, model: Type[BaseModel], columns_definitions: list[str]):
+        table = _table_name(model)
+        temp_table = f"{table}_migration_new"
 
+        columns_sql = ", ".join(columns_definitions)
+
+        cursor = self._get_cursor()
+        cursor.execute(f"PRAGMA table_info({table})")
+        existing_columns = [row["name"] for row in cursor.fetchall()]
+
+        new_column_names = [col.split()[0] for col in columns_definitions]
+        shared_columns = [c for c in existing_columns if c in new_column_names]
+        columns_list = ", ".join(shared_columns)
+
+        logger.warning("Recreating table '%s' due to schema changes", table)
+        logger.debug("Shared columns for data migration: %s", columns_list)
+
+        cursor.execute(f"CREATE TABLE {temp_table} ({columns_sql})")
+        logger.debug("Created temp table '%s'", temp_table)
+
+        cursor.execute(f"INSERT INTO {temp_table} ({columns_list}) SELECT {columns_list} FROM {table}")
+        logger.debug("Migrated data from '%s' to '%s'", table, temp_table)
+
+        cursor.execute(f"DROP TABLE {table}")
+        logger.debug("Dropped old table '%s'", table)
+
+        cursor.execute(f"ALTER TABLE {temp_table} RENAME TO {table}")
+        logger.info("Table '%s' recreated successfully", table)
+
+        self._get_connection().commit()
+
+    def create_table_from_model(self, model: Type[BaseModel]):
         table = _table_name(model)
         cursor = self._get_cursor()
 
         cursor.execute(f"PRAGMA table_info({table})")
-        existing_columns = {row["name"] for row in cursor.fetchall()}
+        existing_columns = {row["name"]: row for row in cursor.fetchall()}
+        logger.debug("Existing columns in '%s': %s", table, list(existing_columns.keys()))
 
-        columns_sql_list = []
+        columns_definitions = []
         indexes = []
+        needs_recreation = False
 
         for name, field in model.model_fields.items():
             if name == "__checks__":
@@ -181,38 +267,40 @@ class AutoDB:
 
             annotation = field.annotation
             sql_type = SQL_TYPES.get(annotation, "TEXT")
-            column_sql = f"{name} {sql_type}"
+            column_def = _get_column_definition(name, field, sql_type)
             extra = field.json_schema_extra or {}
 
-            if extra.get("primary_key"):
-                column_sql += " PRIMARY KEY"
-            if extra.get("autoincrement"):
-                column_sql += " AUTOINCREMENT"
-            if extra.get("unique"):
-                column_sql += " UNIQUE"
-            if extra.get("check"):
-                column_sql += f" CHECK ({extra['check']})"
             if extra.get("index"):
                 indexes.append(name)
 
-            if name in existing_columns:
-                continue
+            columns_definitions.append(column_def)
 
-            if existing_columns:
-                alter_sql = f"ALTER TABLE {table} ADD COLUMN {column_sql}"
-                logger.warning("Adding missing column '%s' to table '%s': %s", name, table, alter_sql)
-                cursor.execute(alter_sql)
+            if name in existing_columns:
+                if not _columns_match(existing_columns[name], field, sql_type):
+                    logger.warning(
+                        "Column '%s.%s' is out of sync with schema — expected: [%s], got: type=%s default=%s",
+                        table, name, column_def,
+                        existing_columns[name]["type"],
+                        existing_columns[name]["dflt_value"]
+                    )
+                    needs_recreation = True
+                else:
+                    logger.debug("Column '%s.%s' matches schema", table, name)
             else:
-                columns_sql_list.append(column_sql)
+                if existing_columns:
+                    alter_sql = f"ALTER TABLE {table} ADD COLUMN {column_def}"
+                    logger.warning("Adding missing column '%s' to table '%s': %s", name, table, alter_sql)
+                    cursor.execute(alter_sql)
 
         if not existing_columns:
             table_checks = getattr(model, "__checks__", [])
             checks_sql = [f"CHECK ({expr})" for expr in table_checks]
-            all_parts = columns_sql_list + checks_sql
-            columns_sql = ", ".join(all_parts)
-            create_sql = f"CREATE TABLE IF NOT EXISTS {table} ({columns_sql})"
-            logger.warning(f"Table {table} does not exist! Creating... {create_sql}")
+            all_parts = columns_definitions + checks_sql
+            create_sql = f"CREATE TABLE IF NOT EXISTS {table} ({', '.join(all_parts)})"
+            logger.warning("Table '%s' does not exist! Creating... %s", table, create_sql)
             cursor.execute(create_sql)
+        elif needs_recreation:
+            self._recreate_table(model, columns_definitions)
 
         for column in indexes:
             index_sql = f"CREATE INDEX IF NOT EXISTS idx_{table}_{column} ON {table}({column})"

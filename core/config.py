@@ -4,33 +4,29 @@ __all__ = ["config"]
 
 from core.logger import logger
 
-import configparser
+import os
 import sys
+from dotenv import load_dotenv
 
-
-class ConfigWrapper:
-    def __init__(self, config: configparser.ConfigParser):
-        self._config = config
-
-    def __getattr__(self, item):
-        return SectionWrapper(self._config[item])
+load_dotenv()
 
 
 class SectionWrapper:
-    def __init__(self, section: configparser.SectionProxy):
-        self._section = section
+    def __init__(self, prefix: str = ""):
+        self._prefix = prefix
 
     def __getattr__(self, item):
-        return self._section[item]
+        key = item.upper()
+        value = os.environ.get(key)
+        if value is None:
+            logger.error(f"Missing configuration key: {key}")
+            sys.exit()
+        return value
 
 
-raw_config = configparser.ConfigParser()
-try:
-    raw_config.read('core/config.ini')
-    config = ConfigWrapper(raw_config).CONFIG
-except KeyError as e:
-    logger.error(f"Missing configuration key: {e}")
-    sys.exit()
-except configparser.Error as e:
-    logger.error(f"Error reading config file: {e}")
-    sys.exit()
+class ConfigWrapper:
+    def __getattr__(self, item):
+        return SectionWrapper()
+
+
+config = ConfigWrapper()

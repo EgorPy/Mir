@@ -2,6 +2,7 @@ from core.method_generator import AutoDB, ConnectionManager, cm
 
 from backend.services.auth.api.auth import check_user_session
 import backend.services.chats.constants.role as role
+import backend.services.chats.constants.chat as chat
 from backend.services.chats.schema import *
 
 from fastapi.params import Depends
@@ -112,7 +113,8 @@ async def create_chat(
         Chats,
         owner_id=str(user_id),
         title=str(data.title),
-        public_id=str(data.public_id)
+        public_id=str(data.public_id),
+        type=chat.GROUP
     )
 
     if not result:
