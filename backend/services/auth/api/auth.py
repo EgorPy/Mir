@@ -11,13 +11,12 @@ from backend.services.auth.logic.auth_logic import AuthLogic
 from backend.phone_mode import DEBUG_PHONE_MODE, SERVER_MODE
 from backend.services.auth.schema import *
 
-from core.method_generator import AutoDB, ConnectionManager
+from core.method_generator import AutoDB, ConnectionManager, cm
 from core.redirects import redirect_on_success
 from core.config import config
 from core.logger import logger
 
 app = APIRouter()
-cm = ConnectionManager()
 
 
 @app.post("/login/", status_code=status.HTTP_200_OK)
