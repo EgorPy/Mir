@@ -14,7 +14,7 @@ import { getUserStates } from '../state/user_state.js';
 
 // ─── Константы ────────────────────────────────────────────────────────────────
 
-const WS_BASE  = `ws://${window.location.hostname}:8001/ws`;
+const WS_BASE  = `wss://${window.location.hostname}:8001/ws`;
 const CHUNK_MS = 100;
 const PING_MS  = 15_000;
 

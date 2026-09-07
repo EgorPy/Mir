@@ -49,7 +49,7 @@ export async function openChat(chat) {
 }
 
 async function doJoinChat() {
-    const response = await fetch(`${window.BACKEND_URL}/chats/${tempChatId}/join`, {
+    const response = await fetch(`${window.BACKEND_URL}/chats/${tempChatId}/join/`, {
         credentials: "include"
     });
 
