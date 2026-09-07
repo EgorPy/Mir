@@ -112,7 +112,7 @@ class WSClient {
 const backend = new URL(window.BACKEND_URL)
 const protocol = backend.protocol === "https:" ? "wss" : "ws"
 const userId = await getUserId()
-const ws = new WSClient(`${protocol}://${backend.host}/ws`, userId)
+const ws = new WSClient(`${window.BACKEND_URL.replace(/^http/, "ws")}/ws`, userId)
 
 export async function wsSend(data) {
     ws.send(data)
