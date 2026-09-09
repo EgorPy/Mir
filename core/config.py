@@ -8,12 +8,20 @@ import os
 import sys
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(".env", override=False)
+
+ENV_FILE = "local.env" if os.path.exists("local.env") else ".env"
+load_dotenv(ENV_FILE, override=True)
 
 REQUIRED_KEYS = [
+    "HOST",
     "DOMAIN",
     "BACKEND_PORT",
+    "CALLS_PORT",
     "FRONTEND_PORT",
+    "DB_PATH",
+    "SESSION_DURATION",
+    "REQUEST_INTERVAL",
 ]
 
 

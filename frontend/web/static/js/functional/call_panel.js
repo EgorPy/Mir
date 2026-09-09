@@ -14,7 +14,7 @@ import { getUserStates } from '../state/user_state.js';
 
 // ─── Константы ────────────────────────────────────────────────────────────────
 
-const WS_BASE = `${window.BACKEND_URL.replace(/^http/, "ws")}/ws-call`;
+const WS_BASE = `${window.CALLS_URL.replace(/^http/, "ws")}/ws`;
 const CHUNK_MS = 100;
 const PING_MS  = 15_000;
 
@@ -371,6 +371,7 @@ function _parseFrame(ab) {
 
 function _handleIncomingAudio(ab) {
     const { peerId, audio } = _parseFrame(ab);
+    console.log('IN from', peerId, 'bytes:', audio.byteLength);
     const p = peers.get(peerId);
     if (!p?.playing) return;
     p.queue.push(audio);
@@ -412,12 +413,13 @@ function _initPeerAudio(peerId) {
 
 function _flushQueue(peerId) {
     const p = peers.get(peerId);
-    if (!p?.sourceBuffer || !p?.mediaSource) return;
-    if (p.mediaSource.readyState !== 'open') return;
-    if (p.sourceBuffer.updating) return;
+    if (!p?.sourceBuffer || !p?.mediaSource) { console.log('flush skip: no buffer/source', peerId); return; }
+    if (p.mediaSource.readyState !== 'open') { console.log('flush skip: readyState', p.mediaSource.readyState); return; }
+    if (p.sourceBuffer.updating) { console.log('flush skip: updating'); return; }
     if (!p.queue?.length) return;
     try {
         p.sourceBuffer.appendBuffer(p.queue.shift());
+        console.log('appended, queue left:', p.queue.length);
     } catch (e) {
         console.warn('appendBuffer failed:', e);
         p.queue = [];

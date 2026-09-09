@@ -420,6 +420,8 @@ class AutoDB:
         return self.execute(sql, params)
 
 
+from core.config import config  # DO NOT REMOVE
+
 DB_PATH = os.environ.get("DB_PATH", "data/database.db")
 
 cm = ConnectionManager(path=DB_PATH)
