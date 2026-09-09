@@ -322,6 +322,8 @@
 .chat-header {
     position: fixed;
     top: 0;
+    left: 0;
+    width: 100%;      /* критично: без этого fixed-блок не занимает ширину экрана */
     height: 4rem;
     background-color: var(--color-bg-base);
     display: none;
@@ -356,6 +358,30 @@
 
 .chat-header .chat-buttons-group .header-button {
     padding: 0 1rem;
+}
+
+.chat-header .chat-buttons-group {
+    display: flex;
+    align-items: center;
+    flex: 1 1 auto;
+    min-width: 0;          /* без этого contents не даст сжаться */
+    justify-content: flex-start;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.chat-header .chat-buttons-group #titleBtn {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chat-header .chat-buttons-group #callBtn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    margin-left: auto;
 }
 
 /*#callSection {*/
