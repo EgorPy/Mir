@@ -379,13 +379,18 @@ function _handleIncomingAudio(ab) {
 }
 
 function _initPeerAudio(peerId) {
-    let p = peers.get(peerId);
-    if (!p) { p = {}; peers.set(peerId, p); }
+    if (peers.has(peerId)) {
+        console.warn('_initPeerAudio: peer already initialized, skipping', peerId);
+        return;
+    }
 
-    p.queue        = [];
-    p.sourceBuffer = null;
-    p.mediaSource  = null;
-    p.playing      = true;
+    const p = {
+        queue: [],
+        sourceBuffer: null,
+        mediaSource: null,
+        playing: true,
+    };
+    peers.set(peerId, p);
 
     const audio = document.createElement('audio');
     audio.autoplay    = true;

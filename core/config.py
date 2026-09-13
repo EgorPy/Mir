@@ -22,6 +22,7 @@ REQUIRED_KEYS = [
     "DB_PATH",
     "SESSION_DURATION",
     "REQUEST_INTERVAL",
+    # "CALLS_URL",
 ]
 
 
