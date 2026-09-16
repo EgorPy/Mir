@@ -1,3 +1,14 @@
+x-app-environment: &app-environment
+  HOST: "${HOST:?HOST is not set}"
+  DOMAIN: "${DOMAIN:?DOMAIN is not set}"
+  BACKEND_PORT: "${BACKEND_PORT:?BACKEND_PORT is not set}"
+  CALLS_PORT: "${CALLS_PORT:?CALLS_PORT is not set}"
+  FRONTEND_PORT: "${FRONTEND_PORT:?FRONTEND_PORT is not set}"
+  DB_PATH: "${DB_PATH:?DB_PATH is not set}"
+  CALLS_URL: "${CALLS_URL:?CALLS_URL is not set}"
+  SESSION_DURATION: "${SESSION_DURATION:?SESSION_DURATION is not set}"
+  REQUEST_INTERVAL: "${REQUEST_INTERVAL:?REQUEST_INTERVAL is not set}"
+
 services:
   ved3v-backend:
     build: .
@@ -6,8 +17,7 @@ services:
     restart: unless-stopped
     #ports:
     #  - "0.0.0.0:8000:8000"
-    env_file:
-      - .env
+    environment: *app-environment
     volumes:
       - ./data:/app/data
     working_dir: /app
@@ -19,6 +29,7 @@ services:
     container_name: ved3v-calls
     command: python -m tests.calls_websockets_test.server
     restart: unless-stopped
+    environment: *app-environment
     working_dir: /app
     networks:
       - web
@@ -30,8 +41,7 @@ services:
     restart: unless-stopped
     #ports:
     #  - "0.0.0.0:3000:3000"
-    env_file:
-      - .env
+    environment: *app-environment
     working_dir: /app
     depends_on:
       - ved3v-backend

@@ -1,0 +1,86 @@
+# Version control and CI metadata
+.git
+.gitignore
+.gitattributes
+.gitlab/
+.gitlab-ci.yml
+.github/
+.dockerignore
+
+# Docker files are not required inside the image
+Dockerfile*
+docker-compose*.yml
+compose*.yml
+compose*.yaml
+
+# Environment variables and local secrets
+.env
+.env.*
+*.env
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Local environments and package caches
+.venv/
+venv/
+env/
+ENV/
+__pypackages__/
+.cache/
+.npm/
+.pnpm-store/
+.yarn/
+node_modules/
+
+# Keep the websocket service used by docker-compose, exclude other tests
+tests/*
+!tests/calls_websockets_test/
+!tests/calls_websockets_test/**
+
+# Python and test artifacts
+**/__pycache__/
+**/*.py[cod]
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+.mypy_cache/
+.pyre/
+.pytype/
+.ruff_cache/
+
+# Runtime data and generated output
+data/
+**/*.db
+**/*.db-journal
+**/*.db-shm
+**/*.db-wal
+**/*.sqlite
+**/*.sqlite3
+**/*.sqlite-shm
+**/*.sqlite-wal
+**/*.log
+**/*.out
+**/*.pid
+**/*.tmp
+**/config.js
+**/config_server.js
+
+# Development-only documentation and settings
+docs/
+README*
+AGENTS.md
+RULES.md
+TODO.py
+.idea/
+.vscode/
+.fleet/
+.zed/
+.DS_Store
+Thumbs.db
