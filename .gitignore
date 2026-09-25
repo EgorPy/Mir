@@ -60,7 +60,6 @@ data/
 *.log
 *.out
 *.pid
-config.js
 config_server.js
 
 # Optional frontend tooling
