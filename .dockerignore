@@ -69,8 +69,8 @@ data/
 **/*.out
 **/*.pid
 **/*.tmp
-**/config.js
-**/config_server.js
+#**/config.js
+#**/config_server.js
 
 # Development-only documentation and settings
 docs/
