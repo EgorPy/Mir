@@ -134,6 +134,8 @@ async def debug_chat_js():
     import os
     from pathlib import Path
 
+    print("test change")
+
     chat_js_path = Path("frontend/web/pages/widgets/chat.js")
 
     # Пробуем разными способами прочитать файл
