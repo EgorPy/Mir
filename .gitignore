@@ -1,54 +1,95 @@
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.log
-*.sqlite3
-*.db
-*.db-journal
+# Environment variables and local secrets
+.env
+.env.*
 *.env
-*.venv
+!.env.example
+!.env.*.example
+!*.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Python bytecode and interpreter caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
 venv/
 env/
+ENV/
+__pypackages__/
 
-# OS files
-.DS_Store
-Thumbs.db
-desktop.ini
+# Python packages and build artifacts
+build/
+dist/
+wheels/
+*.egg
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
 
-# IDEs
-.vscode/
+# Tests, coverage and code-quality tools
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.ruff_cache/
+
+# Runtime data and generated application files
+data/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+*.log
+*.out
+*.pid
+config_server.js
+
+# Optional frontend tooling
+node_modules/
+.npm/
+.pnpm-store/
+.yarn/
+
+# IDE and editor files
 .idea/
+.vscode/
+.fleet/
+.zed/
+*.iml
 *.sublime-project
 *.sublime-workspace
-
-# Logs and output
-*.out
-*.log
-*.tmp
-
-# Node / frontend
-node_modules/
-dist/
-build/
-*.lock
-
-# Backup files
-*~
-*.bak
 *.swp
+*.swo
+*~
+
+# Operating system files
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+
+# Temporary files and local caches
+.cache/
+.ipynb_checkpoints/
+*.bak
 *.old
-
-# PyInstaller / executables
-*.exe
-*.dll
-*.so
-*.dylib
-
-# Others
-pip-wheel-metadata/
-*.ini
-*.pem
-config.js
-config_server.js
+*.orig
+*.tmp

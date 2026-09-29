@@ -30,6 +30,8 @@ app = FastAPI(title="Group WebSocket Audio Call")
 # Словарь комнат: { call_id: { peer_id: WebSocket } }
 rooms: dict[str, dict[str, WebSocket]] = {}
 
+audio_init_chunks: dict[str, dict[str, bytes]] = {}
+
 # Максимум участников на комнату (0 = без ограничений)
 MAX_PEERS_PER_ROOM = 10
 
@@ -64,39 +66,62 @@ async def websocket_call(websocket: WebSocket, call_id: str, peer_id: str):
     await websocket.accept()
     logger.info(f"[{call_id}] + {peer_id}")
 
-    # Инициализируем комнату
     if call_id not in rooms:
         rooms[call_id] = {}
+
+    if call_id not in audio_init_chunks:
+        audio_init_chunks[call_id] = {}
+
     room = rooms[call_id]
 
-    # Проверки
     if MAX_PEERS_PER_ROOM and len(room) >= MAX_PEERS_PER_ROOM:
-        await websocket.send_text(json.dumps({"type": "error", "message": "room_full"}))
+        await websocket.send_text(json.dumps({
+            "type": "error",
+            "message": "room_full"
+        }))
         await websocket.close(code=4001)
         return
 
     if peer_id in room:
-        await websocket.send_text(json.dumps({"type": "error", "message": "peer_id_taken"}))
+        await websocket.send_text(json.dumps({
+            "type": "error",
+            "message": "peer_id_taken"
+        }))
         await websocket.close(code=4002)
         return
 
-    room[peer_id] = websocket
+    existing_peers = list(room.keys())
 
-    # Сообщаем новому участнику, кто уже есть в комнате
     await websocket.send_text(json.dumps({
         "type": "joined",
         "call_id": call_id,
         "peer_id": peer_id,
-        "peers": list(room.keys()),
+        "peers": existing_peers,
     }))
 
-    # Остальным сообщаем, что пришёл новый
+    for existing_peer_id in existing_peers:
+        init_chunk = audio_init_chunks[call_id].get(existing_peer_id)
+
+        if init_chunk is None:
+            continue
+
+        try:
+            await websocket.send_bytes(
+                _frame(existing_peer_id, init_chunk)
+            )
+        except Exception as e:
+            logger.error(
+                f"[{call_id}] failed to send init chunk "
+                f"from {existing_peer_id} to {peer_id}: {e}"
+            )
+
+    room[peer_id] = websocket
+
     await _broadcast_text(room, exclude=peer_id, data={
         "type": "peer_joined",
         "peer_id": peer_id,
     })
 
-    # Главный цикл
     try:
         while True:
             message = await websocket.receive()
@@ -105,14 +130,31 @@ async def websocket_call(websocket: WebSocket, call_id: str, peer_id: str):
                 break
 
             elif message.get("bytes") is not None:
-                # Аудио-чанк: сервер добавляет заголовок с peer_id и рассылает
                 audio: bytes = message["bytes"]
+
+                if peer_id not in audio_init_chunks[call_id]:
+                    audio_init_chunks[call_id][peer_id] = audio
+                    logger.info(
+                        f"[{call_id}] stored audio init chunk "
+                        f"for {peer_id}: {len(audio)} bytes"
+                    )
+
                 framed = _frame(peer_id, audio)
-                await _broadcast_bytes(room, exclude=peer_id, data=framed)
+
+                await _broadcast_bytes(
+                    room,
+                    exclude=peer_id,
+                    data=framed
+                )
 
             elif message.get("text") is not None:
                 try:
-                    await _handle_signaling(room, peer_id, json.loads(message["text"]), websocket)
+                    await _handle_signaling(
+                        room,
+                        peer_id,
+                        json.loads(message["text"]),
+                        websocket
+                    )
                 except (json.JSONDecodeError, KeyError):
                     pass
 
@@ -122,7 +164,12 @@ async def websocket_call(websocket: WebSocket, call_id: str, peer_id: str):
         logger.error(f"[{call_id}] {peer_id} error: {e}")
     finally:
         room.pop(peer_id, None)
-        logger.info(f"[{call_id}] - {peer_id}. Remaining: {list(room.keys())}")
+        audio_init_chunks[call_id].pop(peer_id, None)
+
+        logger.info(
+            f"[{call_id}] - {peer_id}. "
+            f"Remaining: {list(room.keys())}"
+        )
 
         await _broadcast_text(room, exclude=None, data={
             "type": "peer_left",
@@ -131,6 +178,7 @@ async def websocket_call(websocket: WebSocket, call_id: str, peer_id: str):
 
         if not room:
             rooms.pop(call_id, None)
+            audio_init_chunks.pop(call_id, None)
 
 
 # ---------------------------------------------------------------------------

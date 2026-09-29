@@ -322,18 +322,23 @@ function _handleSignaling(msg) {
             msg.peers
                 .filter(pid => pid !== myPeerId)
                 .forEach(pid => {
-                _initPeerAudio(pid);
-                _fetchUser(pid).then(user => _addPeerCard(pid, false, user));
+                _fetchUser(pid).then(user => {
+                    _addPeerCard(pid, false, user);
+                });
             });
             break;
+
         case 'peer_joined':
-            _initPeerAudio(msg.peer_id);
-            _fetchUser(msg.peer_id).then(user => _addPeerCard(msg.peer_id, false, user));
+            _fetchUser(msg.peer_id).then(user => {
+                _addPeerCard(msg.peer_id, false, user);
+            });
             break;
+
         case 'peer_left':
             _destroyPeerAudio(msg.peer_id);
             _removePeerCard(msg.peer_id);
             break;
+
         case 'peer_muted':
             _setPeerMuted(msg.peer_id, msg.muted);
             break;
@@ -371,86 +376,162 @@ function _parseFrame(ab) {
 
 function _handleIncomingAudio(ab) {
     const { peerId, audio } = _parseFrame(ab);
-    console.log('IN from', peerId, 'bytes:', audio.byteLength);
-    const p = peers.get(peerId);
+
+    let p = peers.get(peerId);
+
+    if (!p) {
+        _initPeerAudio(peerId);
+        p = peers.get(peerId);
+    }
+
     if (!p?.playing) return;
+
     p.queue.push(audio);
     _flushQueue(peerId);
 }
 
 function _initPeerAudio(peerId) {
-    if (peers.has(peerId)) {
-        console.warn('_initPeerAudio: peer already initialized, skipping', peerId);
-        return;
-    }
+    if (peers.has(peerId)) return;
 
     const p = {
         queue: [],
         sourceBuffer: null,
         mediaSource: null,
         playing: true,
+        audio: null,
+        objectUrl: null,
+        started: false,
     };
+
     peers.set(peerId, p);
 
     const audio = document.createElement('audio');
-    audio.autoplay    = true;
+
+    audio.autoplay = true;
     audio.playsInline = true;
+    audio.preload = 'auto';
+
     document.body.appendChild(audio);
+
     p.audio = audio;
 
     const ms = new MediaSource();
+
     p.mediaSource = ms;
-    audio.src = URL.createObjectURL(ms);
+    p.objectUrl = URL.createObjectURL(ms);
+
+    audio.src = p.objectUrl;
 
     ms.addEventListener('sourceopen', () => {
         if (p.mediaSource !== ms) return;
-        try {
-            const sb = ms.addSourceBuffer(RECORD_MIME || 'audio/webm;codecs=opus');
-            sb.mode = 'sequence';
-            p.sourceBuffer = sb;
-            sb.addEventListener('updateend', () => _flushQueue(peerId));
-            _flushQueue(peerId);
-        } catch (e) {
-            console.warn('addSourceBuffer failed:', e);
+
+        const mime = RECORD_MIME || 'audio/webm;codecs=opus';
+
+        if (!MediaSource.isTypeSupported(mime)) {
+            console.error(
+                'MSE не поддерживает MIME:',
+                mime
+            );
+            return;
         }
-    });
+
+        try {
+            const sb = ms.addSourceBuffer(mime);
+
+            sb.mode = 'sequence';
+
+            sb.addEventListener('updateend', () => {
+                if (!p.started) {
+                    p.started = true;
+
+                    audio.play().catch(error => {
+                        console.warn(
+                            'Не удалось запустить audio.play():',
+                            error
+                        );
+                    });
+                }
+
+                _flushQueue(peerId);
+            });
+
+            sb.addEventListener('error', () => {
+                console.error(
+                    'SourceBuffer error:',
+                    peerId
+                );
+            });
+
+            p.sourceBuffer = sb;
+
+            _flushQueue(peerId);
+        } catch (error) {
+            console.error(
+                'Не удалось создать SourceBuffer:',
+                peerId,
+                error
+            );
+        }
+    }, { once: true });
 }
 
 function _flushQueue(peerId) {
     const p = peers.get(peerId);
-    if (!p?.sourceBuffer || !p?.mediaSource) { console.log('flush skip: no buffer/source', peerId); return; }
-    if (p.mediaSource.readyState !== 'open') { console.log('flush skip: readyState', p.mediaSource.readyState); return; }
-    if (p.sourceBuffer.updating) { console.log('flush skip: updating'); return; }
-    if (!p.queue?.length) return;
+
+    if (!p?.sourceBuffer) return;
+    if (!p.mediaSource) return;
+    if (p.mediaSource.readyState !== 'open') return;
+    if (p.sourceBuffer.updating) return;
+    if (!p.queue.length) return;
+
+    const chunk = p.queue[0];
+
     try {
-        p.sourceBuffer.appendBuffer(p.queue.shift());
-        console.log('appended, queue left:', p.queue.length);
-    } catch (e) {
-        console.warn('appendBuffer failed:', e);
-        p.queue = [];
+        p.sourceBuffer.appendBuffer(chunk);
+        p.queue.shift();
+    } catch (error) {
+        console.error(
+            'appendBuffer failed:',
+            peerId,
+            error,
+            'bytes:',
+            chunk.byteLength
+        );
     }
 }
 
 function _destroyPeerAudio(peerId) {
     const p = peers.get(peerId);
+
     if (!p) return;
 
     p.playing = false;
-    p.queue   = [];
+    p.queue.length = 0;
 
     if (p.audio) {
         p.audio.pause();
-        p.audio.src = '';
+        p.audio.removeAttribute('src');
+        p.audio.load();
         p.audio.remove();
         p.audio = null;
     }
 
     if (p.mediaSource) {
-        try { if (p.mediaSource.readyState === 'open') p.mediaSource.endOfStream(); } catch {}
-        p.mediaSource = null;
+        try {
+            if (p.mediaSource.readyState === 'open') {
+                p.mediaSource.endOfStream();
+            }
+        } catch {}
+    }
+
+    if (p.objectUrl) {
+        URL.revokeObjectURL(p.objectUrl);
+        p.objectUrl = null;
     }
 
     p.sourceBuffer = null;
+    p.mediaSource = null;
+
     peers.delete(peerId);
 }
 
