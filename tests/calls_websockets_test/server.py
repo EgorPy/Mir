@@ -1,22 +1,19 @@
 """
-Сервер для ГРУППОВОГО аудиозвонка через WebSocket.
+Сервер для ГРУППОВОГО аудиозвонка через WebSocket (PCM16-relay).
 
-Отличия от 1-на-1:
-  - Нет лимита на кол-во участников (можно выставить своё MAX_PEERS)
-  - Relay рассылает аудио-чанки всем остальным в комнате
-  - Каждый бинарный пакет предваряется 1-байтовым заголовком длины peer_id
-    и самим peer_id, чтобы получатель знал, от кого пришёл звук
+Клиенты шлют бинарные кадры PCM16 (моно, 16 кГц, little-endian, 20 мс).
+Каждый кадр самодостаточен, поэтому серверу не нужно хранить init-чанки:
+он просто пересылает кадр всем остальным в комнате, добавляя заголовок
+с идентификатором отправителя.
 
-Формат бинарного пакета (binary frame):
+Формат бинарного пакета, который уходит получателям:
   ┌──────────────────┬──────────────────┬──────────────────────┐
   │  1 byte          │  N bytes         │  остальное           │
-  │  len(peer_id)    │  peer_id (UTF-8) │  аудио-данные (Opus) │
+  │  len(peer_id)    │  peer_id (UTF-8) │  PCM16 LE            │
   └──────────────────┴──────────────────┴──────────────────────┘
-
-Такой формат позволяет клиенту читать: "первый байт = длина ID, следующие N
-байт = кто прислал, остальное = аудио". Это дешевле, чем JSON-обёртка.
 """
 
+import asyncio
 import json
 import logging
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -32,6 +29,10 @@ rooms: dict[str, dict[str, WebSocket]] = {}
 
 # Максимум участников на комнату (0 = без ограничений)
 MAX_PEERS_PER_ROOM = 10
+
+# Нормальный кадр: 20 мс * 16 кГц * 2 байта = 640 байт.
+# Всё, что сильно больше, считаем мусором и не рассылаем.
+MAX_AUDIO_FRAME_BYTES = 4096
 
 
 # ---------------------------------------------------------------------------
@@ -64,39 +65,49 @@ async def websocket_call(websocket: WebSocket, call_id: str, peer_id: str):
     await websocket.accept()
     logger.info(f"[{call_id}] + {peer_id}")
 
-    # Инициализируем комнату
-    if call_id not in rooms:
-        rooms[call_id] = {}
-    room = rooms[call_id]
+    # В заголовке длина peer_id занимает 1 байт
+    if len(peer_id.encode("utf-8")) > 255:
+        await websocket.send_text(json.dumps({
+            "type": "error",
+            "message": "peer_id_too_long"
+        }))
+        await websocket.close(code=4003)
+        return
 
-    # Проверки
+    room = rooms.setdefault(call_id, {})
+
     if MAX_PEERS_PER_ROOM and len(room) >= MAX_PEERS_PER_ROOM:
-        await websocket.send_text(json.dumps({"type": "error", "message": "room_full"}))
+        await websocket.send_text(json.dumps({
+            "type": "error",
+            "message": "room_full"
+        }))
         await websocket.close(code=4001)
         return
 
     if peer_id in room:
-        await websocket.send_text(json.dumps({"type": "error", "message": "peer_id_taken"}))
+        await websocket.send_text(json.dumps({
+            "type": "error",
+            "message": "peer_id_taken"
+        }))
         await websocket.close(code=4002)
         return
 
-    room[peer_id] = websocket
+    existing_peers = list(room.keys())
 
-    # Сообщаем новому участнику, кто уже есть в комнате
     await websocket.send_text(json.dumps({
         "type": "joined",
         "call_id": call_id,
         "peer_id": peer_id,
-        "peers": list(room.keys()),
+        "peers": existing_peers,
     }))
 
-    # Остальным сообщаем, что пришёл новый
+    room[peer_id] = websocket
+
     await _broadcast_text(room, exclude=peer_id, data={
         "type": "peer_joined",
         "peer_id": peer_id,
     })
 
-    # Главный цикл
     try:
         while True:
             message = await websocket.receive()
@@ -105,14 +116,25 @@ async def websocket_call(websocket: WebSocket, call_id: str, peer_id: str):
                 break
 
             elif message.get("bytes") is not None:
-                # Аудио-чанк: сервер добавляет заголовок с peer_id и рассылает
                 audio: bytes = message["bytes"]
-                framed = _frame(peer_id, audio)
-                await _broadcast_bytes(room, exclude=peer_id, data=framed)
+
+                if not audio or len(audio) > MAX_AUDIO_FRAME_BYTES:
+                    continue
+
+                await _broadcast_bytes(
+                    room,
+                    exclude=peer_id,
+                    data=_frame(peer_id, audio)
+                )
 
             elif message.get("text") is not None:
                 try:
-                    await _handle_signaling(room, peer_id, json.loads(message["text"]), websocket)
+                    await _handle_signaling(
+                        room,
+                        peer_id,
+                        json.loads(message["text"]),
+                        websocket
+                    )
                 except (json.JSONDecodeError, KeyError):
                     pass
 
@@ -122,7 +144,11 @@ async def websocket_call(websocket: WebSocket, call_id: str, peer_id: str):
         logger.error(f"[{call_id}] {peer_id} error: {e}")
     finally:
         room.pop(peer_id, None)
-        logger.info(f"[{call_id}] - {peer_id}. Remaining: {list(room.keys())}")
+
+        logger.info(
+            f"[{call_id}] - {peer_id}. "
+            f"Remaining: {list(room.keys())}"
+        )
 
         await _broadcast_text(room, exclude=None, data={
             "type": "peer_left",
@@ -149,25 +175,36 @@ def _frame(peer_id: str, audio: bytes) -> bytes:
 # Broadcast хелперы
 # ---------------------------------------------------------------------------
 
+async def _safe_send_bytes(ws: WebSocket, data: bytes):
+    try:
+        await ws.send_bytes(data)
+    except Exception:
+        pass
+
+
+async def _safe_send_text(ws: WebSocket, payload: str):
+    try:
+        await ws.send_text(payload)
+    except Exception:
+        pass
+
+
 async def _broadcast_bytes(room: dict, exclude: str | None, data: bytes):
-    for pid, ws in list(room.items()):
-        if pid == exclude:
-            continue
-        try:
-            await ws.send_bytes(data)
-        except Exception:
-            pass
+    # Параллельная отправка: один медленный клиент не задерживает остальных
+    await asyncio.gather(*(
+        _safe_send_bytes(ws, data)
+        for pid, ws in list(room.items())
+        if pid != exclude
+    ))
 
 
 async def _broadcast_text(room: dict, exclude: str | None, data: dict):
     payload = json.dumps(data)
-    for pid, ws in list(room.items()):
-        if pid == exclude:
-            continue
-        try:
-            await ws.send_text(payload)
-        except Exception:
-            pass
+    await asyncio.gather(*(
+        _safe_send_text(ws, payload)
+        for pid, ws in list(room.items())
+        if pid != exclude
+    ))
 
 
 async def _handle_signaling(room, sender_id, data, websocket):

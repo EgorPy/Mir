@@ -1,50 +1,132 @@
 /**
  * call_panel.js
  *
- * Управляет UI панели звонка (#callSection) и интегрирует WebSocket-логику
- * групповых аудиозвонков.
+ * UI панели звонка (#callSection) + групповые аудиозвонки через WebSocket.
+ *
+ * Транспорт аудио: сырой PCM16 (моно, 16 кГц), кадры по 20 мс.
+ *   Захват:        микрофон -> AudioWorklet (даунсэмплинг, VAD, Int16) -> WebSocket
+ *   Воспроизведение: WebSocket -> Int16 -> AudioBuffer -> планирование по времени
+ *                    AudioContext (jitter-буфер на каждого участника)
+ *
+ * Каждый кадр самодостаточен: нет заголовков, кластеров и init-чанков,
+ * поэтому подключиться к звонку можно в любой момент, а mute не ломает поток.
  *
  * Публичное API:
  *   initCallPanel()   — вызвать один раз после загрузки DOM
  *   startCall(chat)   — открыть/развернуть панель и подключиться к звонку
  *   endCall()         — завершить звонок и скрыть панель
+ *   toggleExpand()    — свернуть/развернуть панель
+ *
+ * Требуется HTTPS (или localhost): getUserMedia и AudioWorklet работают
+ * только в secure context.
  */
 
 import { getUserStates } from '../state/user_state.js';
 
 // ─── Константы ────────────────────────────────────────────────────────────────
 
-const WS_BASE = `${window.CALLS_URL.replace(/^http/, "ws")}/ws`;
-const CHUNK_MS = 100;
-const PING_MS  = 15_000;
+const WS_BASE = `${window.CALLS_URL.replace(/^http/, 'ws')}/ws`;
+const PING_MS = 15_000;
 
-const RECORD_MIME = (() => {
-    const candidates = [
-        'audio/webm;codecs=opus',
-        'audio/webm',
-        'audio/ogg;codecs=opus',
-    ];
-    return candidates.find(m => MediaRecorder.isTypeSupported(m)) ?? '';
-})();
+// Формат аудио на проводе
+const SAMPLE_RATE   = 16_000;                 // Гц, достаточно для речи
+const FRAME_SAMPLES = 320;                    // 20 мс при 16 кГц
+const FRAME_SEC     = FRAME_SAMPLES / SAMPLE_RATE;
+
+// Jitter-буфер приёма
+const JITTER_S   = 0.08;   // запас, с которым начинаем проигрывание после паузы/недогруза
+const MAX_LEAD_S = 0.40;   // если очередь на воспроизведение длиннее — отбрасываем кадры
+
+// VAD (не отправляем тишину)
+const VAD_ENABLED         = true;
+const VAD_THRESHOLD       = 0.008;  // RMS (~ -42 dBFS)
+const VAD_HANGOVER_FRAMES = 15;     // 15 * 20 мс = 300 мс «хвоста» после речи
+
+// ─── Код AudioWorklet (грузится через Blob, отдельный файл не нужен) ─────────
+
+const CAPTURE_WORKLET_SRC = `
+class PcmCapture extends AudioWorkletProcessor {
+    constructor(options) {
+        super();
+        const o = options.processorOptions;
+        this.ratio         = sampleRate / o.targetRate;   // sampleRate — глобал контекста
+        this.frameSamples  = o.frameSamples;
+        this.vadEnabled    = o.vadEnabled;
+        this.vadThreshold  = o.vadThreshold;
+        this.hangoverFrames = o.hangoverFrames;
+
+        this.frame = new Int16Array(this.frameSamples);
+        this.pos   = 0;
+        this.phase = 0;
+        this.acc   = 0;
+        this.accN  = 0;
+        this.sumSq = 0;
+        this.hang  = 0;
+    }
+
+    process(inputs) {
+        const ch = inputs[0] && inputs[0][0];
+        if (!ch) return true;
+
+        for (let i = 0; i < ch.length; i++) {
+            // Даунсэмплинг усреднением (box-фильтр) — для речи достаточно
+            this.acc += ch[i];
+            this.accN++;
+            this.phase += 1;
+            if (this.phase < this.ratio) continue;
+            this.phase -= this.ratio;
+
+            let v = this.acc / this.accN;
+            this.acc = 0;
+            this.accN = 0;
+
+            if (v > 1) v = 1; else if (v < -1) v = -1;
+            this.sumSq += v * v;
+            this.frame[this.pos++] = v < 0 ? v * 32768 : v * 32767;
+
+            if (this.pos === this.frameSamples) this._flush();
+        }
+        return true;
+    }
+
+    _flush() {
+        const rms = Math.sqrt(this.sumSq / this.frameSamples);
+        this.sumSq = 0;
+        this.pos   = 0;
+
+        if (this.vadEnabled) {
+            if (rms > this.vadThreshold)  this.hang = this.hangoverFrames;
+            else if (this.hang > 0)       this.hang--;
+            else                          return;      // тишина — кадр не отправляем
+        }
+
+        const buf = this.frame.buffer;
+        this.frame = new Int16Array(this.frameSamples);
+        this.port.postMessage(buf, [buf]);             // передаём без копирования
+    }
+}
+registerProcessor('pcm-capture', PcmCapture);
+`;
 
 // ─── Состояние ────────────────────────────────────────────────────────────────
 
 let ws            = null;
 let myPeerId      = '';
-let myFirstName   = '';
 let currentChatId = null;
 let isMuted       = false;
 let isExpanded    = false;
 let inCall        = false;
 
-let mediaRecorder = null;
 let localStream   = null;
 let audioCtx      = null;
+let micSource     = null;
+let captureNode   = null;
+let silentGain    = null;
 let pingInterval  = null;
 let timerInterval = null;
 let callSeconds   = 0;
 
-/** @type {Map<string, {queue: ArrayBuffer[], sourceBuffer: SourceBuffer|null, mediaSource: MediaSource|null, playing: boolean, audio: HTMLAudioElement|null}>} */
+/** @type {Map<string, {nextTime: number, speakingTimer: number|null}>} */
 const peers = new Map();
 
 // ─── DOM-ссылки ───────────────────────────────────────────────────────────────
@@ -126,46 +208,66 @@ export async function startCall(chat) {
         return;
     }
 
-    currentChatId = chat.id;
-
     const user = getUserStates();
     if (!user.user_id) {
         console.error('startCall: user.user_id not defined');
         return;
     }
-    myPeerId    = String(user.user_id);
-    _fetchUser(myPeerId).then(u => _addPeerCard(myPeerId, true, u));
+
+    inCall        = true;
+    currentChatId = chat.id;
+    myPeerId      = String(user.user_id);
 
     chatNameEl.textContent = chat.title || 'Звонок';
-
     _show();
     _expand();
 
+    // Карточку себя добавляем один раз; имя подтянется, когда придёт ответ
+    _addPeerCard(myPeerId, true);
+    _fetchUser(myPeerId).then(u => _updatePeerCard(myPeerId, u));
+
+    // AudioContext создаём СИНХРОННО, пока действует жест пользователя
+    // (Safari/iOS иначе оставят его в suspended).
+    audioCtx = new AudioContext({ latencyHint: 'interactive' });
+    audioCtx.resume().catch(() => {});
+
     try {
-        localStream = await navigator.mediaDevices.getUserMedia({
-            audio: { echoCancellation: true, noiseSuppression: true },
+        const stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+                channelCount: 1,
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true,
+            },
             video: false,
         });
+
+        if (!inCall) {                       // успели нажать «завершить» во время запроса
+            stream.getTracks().forEach(t => t.stop());
+            return;
+        }
+        localStream = stream;
+
+        await _setupCaptureGraph();
     } catch (err) {
-        console.error('Нет доступа к микрофону:', err);
-        _hide();
+        console.error('Не удалось получить микрофон / запустить аудио:', err);
+        endCall();
         return;
     }
 
-    audioCtx = new AudioContext();
-    inCall   = true;
+    if (!inCall) return;
 
-    _addPeerCard(myPeerId, true);
-
-    callSeconds   = 0;
+    callSeconds = 0;
     _updateTimerEl();
     timerInterval = setInterval(() => { callSeconds++; _updateTimerEl(); }, 1000);
 
-    const callId = String(chat.id);
-    ws = new WebSocket(`${WS_BASE}/${callId}/${myPeerId}`);
+    ws = new WebSocket(`${WS_BASE}/${String(chat.id)}/${myPeerId}`);
     ws.binaryType = 'arraybuffer';
 
-    ws.onopen    = () => { _startRecording(); _startPing(); };
+    ws.onopen = () => {
+        audioCtx?.resume().catch(() => {});
+        _startPing();
+    };
     ws.onmessage = (ev) => {
         if (typeof ev.data === 'string') _handleSignaling(JSON.parse(ev.data));
         else                             _handleIncomingAudio(ev.data);
@@ -182,21 +284,32 @@ export function endCall() {
     timerInterval = null;
     pingInterval  = null;
 
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
-    mediaRecorder = null;
+    if (captureNode) {
+        captureNode.port.onmessage = null;
+        try { captureNode.disconnect(); } catch {}
+        captureNode = null;
+    }
+    if (micSource) {
+        try { micSource.disconnect(); } catch {}
+        micSource = null;
+    }
+    if (silentGain) {
+        try { silentGain.disconnect(); } catch {}
+        silentGain = null;
+    }
 
     if (localStream) {
         localStream.getTracks().forEach(t => t.stop());
         localStream = null;
     }
 
+    for (const pid of [...peers.keys()]) _destroyPeer(pid);
+    peers.clear();
+
     if (audioCtx) {
         audioCtx.close().catch(() => {});
         audioCtx = null;
     }
-
-    for (const pid of [...peers.keys()]) _destroyPeerAudio(pid);
-    peers.clear();
 
     if (ws) {
         ws.onclose = null;
@@ -240,11 +353,61 @@ function _collapse() {
     callSection.classList.remove('expanded');
 }
 
+// ─── Захват микрофона ────────────────────────────────────────────────────────
+
+async function _setupCaptureGraph() {
+    const url = URL.createObjectURL(
+        new Blob([CAPTURE_WORKLET_SRC], { type: 'application/javascript' })
+    );
+    try {
+        await audioCtx.audioWorklet.addModule(url);
+    } finally {
+        URL.revokeObjectURL(url);
+    }
+
+    micSource = audioCtx.createMediaStreamSource(localStream);
+
+    captureNode = new AudioWorkletNode(audioCtx, 'pcm-capture', {
+        numberOfInputs: 1,
+        numberOfOutputs: 1,
+        channelCount: 1,
+        channelCountMode: 'explicit',
+        processorOptions: {
+            targetRate:     SAMPLE_RATE,
+            frameSamples:   FRAME_SAMPLES,
+            vadEnabled:     VAD_ENABLED,
+            vadThreshold:   VAD_THRESHOLD,
+            hangoverFrames: VAD_HANGOVER_FRAMES,
+        },
+    });
+
+    // Кадр PCM16 приходит из аудио-потока; mute просто не отправляет его.
+    // Кадры независимы, поэтому пропуск ничего не ломает.
+    captureNode.port.onmessage = (e) => {
+        if (isMuted) return;
+        if (ws?.readyState !== WebSocket.OPEN) return;
+        ws.send(e.data);
+    };
+
+    // Некоторые браузеры не вызывают process() у узла без пути к destination,
+    // поэтому подключаем через нулевой gain.
+    silentGain = audioCtx.createGain();
+    silentGain.gain.value = 0;
+
+    micSource.connect(captureNode);
+    captureNode.connect(silentGain);
+    silentGain.connect(audioCtx.destination);
+}
+
 // ─── Mute ─────────────────────────────────────────────────────────────────────
 
 function toggleMute() {
     if (!localStream) return;
     isMuted = !isMuted;
+
+    // Физически отключаем трек (индикатор микрофона в браузере гаснет/зажигается)
+    localStream.getAudioTracks().forEach(t => { t.enabled = !isMuted; });
+
     _syncMuteBtn();
 
     if (ws?.readyState === WebSocket.OPEN) {
@@ -286,23 +449,35 @@ async function _fetchUser(userId) {
 function _addPeerCard(peerId, isMe = false, user = null) {
     if (peersContainer?.querySelector(`[data-peer-id="${peerId}"]`)) return;
 
+    const card = document.createElement('div');
+    card.className = 'call-peer-card' + (isMe ? ' me' : '');
+    card.dataset.peerId = peerId;
+    if (isMe) card.dataset.me = '1';
+
+    // Имя пользователя вставляем через textContent, а не innerHTML (защита от XSS)
+    card.innerHTML = `
+        <div class="call-peer-avatar">
+            <span class="call-peer-initial"></span>
+            <div class="call-peer-muted-badge">${_iconMicOffSmall()}</div>
+        </div>
+        <span class="call-peer-name"></span>
+    `;
+
+    peersContainer.appendChild(card);
+    _updatePeerCard(peerId, user);
+}
+
+function _updatePeerCard(peerId, user) {
+    const card = peersContainer?.querySelector(`[data-peer-id="${peerId}"]`);
+    if (!card) return;
+
+    const isMe        = card.dataset.me === '1';
     const firstName   = user?.first_name || '';
     const initial     = (firstName || String(peerId)).charAt(0).toUpperCase();
     const displayName = isMe ? 'Вы' : (firstName || String(peerId));
 
-    const card = document.createElement('div');
-    card.className = 'call-peer-card' + (isMe ? ' me' : '');
-    card.dataset.peerId = peerId;
-
-    card.innerHTML = `
-        <div class="call-peer-avatar">
-            <span>${initial}</span>
-            <div class="call-peer-muted-badge">${_iconMicOffSmall()}</div>
-        </div>
-        <span class="call-peer-name">${displayName}</span>
-    `;
-
-    peersContainer.appendChild(card);
+    card.querySelector('.call-peer-initial').textContent = initial;
+    card.querySelector('.call-peer-name').textContent    = displayName;
 }
 
 function _removePeerCard(peerId) {
@@ -314,6 +489,15 @@ function _setPeerMuted(peerId, muted) {
     if (card) card.classList.toggle('muted', muted);
 }
 
+function _markSpeaking(peerId, p) {
+    const card = peersContainer?.querySelector(`[data-peer-id="${peerId}"]`);
+    if (!card) return;
+
+    card.classList.add('speaking');
+    clearTimeout(p.speakingTimer);
+    p.speakingTimer = setTimeout(() => card.classList.remove('speaking'), 400);
+}
+
 // ─── Сигналинг ────────────────────────────────────────────────────────────────
 
 function _handleSignaling(msg) {
@@ -322,135 +506,88 @@ function _handleSignaling(msg) {
             msg.peers
                 .filter(pid => pid !== myPeerId)
                 .forEach(pid => {
-                _initPeerAudio(pid);
-                _fetchUser(pid).then(user => _addPeerCard(pid, false, user));
+                _addPeerCard(pid, false);
+                _fetchUser(pid).then(user => _updatePeerCard(pid, user));
             });
             break;
+
         case 'peer_joined':
-            _initPeerAudio(msg.peer_id);
-            _fetchUser(msg.peer_id).then(user => _addPeerCard(msg.peer_id, false, user));
+            _addPeerCard(msg.peer_id, false);
+            _fetchUser(msg.peer_id).then(user => _updatePeerCard(msg.peer_id, user));
             break;
+
         case 'peer_left':
-            _destroyPeerAudio(msg.peer_id);
+            _destroyPeer(msg.peer_id);
             _removePeerCard(msg.peer_id);
             break;
+
         case 'peer_muted':
             _setPeerMuted(msg.peer_id, msg.muted);
             break;
+
+        case 'error':
+            console.error('Сервер звонков вернул ошибку:', msg.message);
+            break;
     }
-}
-
-// ─── Запись ───────────────────────────────────────────────────────────────────
-
-function _startRecording() {
-    mediaRecorder = new MediaRecorder(
-        localStream,
-        RECORD_MIME ? { mimeType: RECORD_MIME } : {}
-    );
-
-    mediaRecorder.ondataavailable = async (e) => {
-        if (!e.data.size) return;
-        if (ws?.readyState !== WebSocket.OPEN) return;
-        if (isMuted) return;
-        ws.send(await e.data.arrayBuffer());
-    };
-
-    mediaRecorder.start(CHUNK_MS);
 }
 
 // ─── Воспроизведение ─────────────────────────────────────────────────────────
 
+/** Бинарный фрейм: [1 байт: длина peer_id][peer_id UTF-8][PCM16 LE] */
 function _parseFrame(ab) {
     const view  = new DataView(ab);
     const idLen = view.getUint8(0);
     return {
-        peerId: new TextDecoder().decode(ab.slice(1, 1 + idLen)),
-        audio:  ab.slice(1 + idLen),
+        peerId: new TextDecoder().decode(new Uint8Array(ab, 1, idLen)),
+        audio:  ab.slice(1 + idLen),      // новая копия -> выровнена по 2 байтам
     };
 }
 
 function _handleIncomingAudio(ab) {
-    const { peerId, audio } = _parseFrame(ab);
-    console.log('IN from', peerId, 'bytes:', audio.byteLength);
-    const p = peers.get(peerId);
-    if (!p?.playing) return;
-    p.queue.push(audio);
-    _flushQueue(peerId);
-}
+    if (!audioCtx || audioCtx.state === 'closed') return;
 
-function _initPeerAudio(peerId) {
-    if (peers.has(peerId)) {
-        console.warn('_initPeerAudio: peer already initialized, skipping', peerId);
+    const { peerId, audio } = _parseFrame(ab);
+    const samples = audio.byteLength >> 1;
+    if (!samples) return;
+
+    let p = peers.get(peerId);
+    if (!p) {
+        p = { nextTime: 0, speakingTimer: null };
+        peers.set(peerId, p);
+    }
+
+    // Int16 -> Float32
+    const pcm = new Int16Array(audio, 0, samples);
+    const buf = audioCtx.createBuffer(1, samples, SAMPLE_RATE);
+    const out = buf.getChannelData(0);
+    for (let i = 0; i < samples; i++) out[i] = pcm[i] / 32768;
+
+    // Jitter-буфер: каждый кадр ставим «встык» за предыдущим
+    const now = audioCtx.currentTime;
+
+    if (p.nextTime < now + 0.005) {
+        // Очередь опустела (пауза в речи / сеть задержала кадры) —
+        // начинаем заново с небольшим запасом
+        p.nextTime = now + JITTER_S;
+    } else if (p.nextTime - now > MAX_LEAD_S) {
+        // Накопилась задержка (пачка кадров после лага TCP) — выбрасываем,
+        // чтобы не отставать от «живого» звука
         return;
     }
 
-    const p = {
-        queue: [],
-        sourceBuffer: null,
-        mediaSource: null,
-        playing: true,
-    };
-    peers.set(peerId, p);
+    const src = audioCtx.createBufferSource();
+    src.buffer = buf;
+    src.connect(audioCtx.destination);
+    src.start(p.nextTime);
+    p.nextTime += buf.duration;
 
-    const audio = document.createElement('audio');
-    audio.autoplay    = true;
-    audio.playsInline = true;
-    document.body.appendChild(audio);
-    p.audio = audio;
-
-    const ms = new MediaSource();
-    p.mediaSource = ms;
-    audio.src = URL.createObjectURL(ms);
-
-    ms.addEventListener('sourceopen', () => {
-        if (p.mediaSource !== ms) return;
-        try {
-            const sb = ms.addSourceBuffer(RECORD_MIME || 'audio/webm;codecs=opus');
-            sb.mode = 'sequence';
-            p.sourceBuffer = sb;
-            sb.addEventListener('updateend', () => _flushQueue(peerId));
-            _flushQueue(peerId);
-        } catch (e) {
-            console.warn('addSourceBuffer failed:', e);
-        }
-    });
+    _markSpeaking(peerId, p);
 }
 
-function _flushQueue(peerId) {
-    const p = peers.get(peerId);
-    if (!p?.sourceBuffer || !p?.mediaSource) { console.log('flush skip: no buffer/source', peerId); return; }
-    if (p.mediaSource.readyState !== 'open') { console.log('flush skip: readyState', p.mediaSource.readyState); return; }
-    if (p.sourceBuffer.updating) { console.log('flush skip: updating'); return; }
-    if (!p.queue?.length) return;
-    try {
-        p.sourceBuffer.appendBuffer(p.queue.shift());
-        console.log('appended, queue left:', p.queue.length);
-    } catch (e) {
-        console.warn('appendBuffer failed:', e);
-        p.queue = [];
-    }
-}
-
-function _destroyPeerAudio(peerId) {
+function _destroyPeer(peerId) {
     const p = peers.get(peerId);
     if (!p) return;
-
-    p.playing = false;
-    p.queue   = [];
-
-    if (p.audio) {
-        p.audio.pause();
-        p.audio.src = '';
-        p.audio.remove();
-        p.audio = null;
-    }
-
-    if (p.mediaSource) {
-        try { if (p.mediaSource.readyState === 'open') p.mediaSource.endOfStream(); } catch {}
-        p.mediaSource = null;
-    }
-
-    p.sourceBuffer = null;
+    clearTimeout(p.speakingTimer);
     peers.delete(peerId);
 }
 
